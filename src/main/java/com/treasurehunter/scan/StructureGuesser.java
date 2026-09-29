@@ -2,9 +2,11 @@ package com.treasurehunter.scan;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -42,6 +44,9 @@ public final class StructureGuesser {
     private static final int UNDERGROUND_MAX_Y = 20;
     /** 海平面高度：海底废墟等水下结构的判定上限。 */
     private static final int SEA_LEVEL_Y = 63;
+    /** 猪灵堡垒锚点 y=33（26.2 数据）；模板箱子相对锚 +1~+29，装配后实测约 34~62，取宽松区间。 */
+    private static final int BASTION_MIN_Y = 20;
+    private static final int BASTION_MAX_Y = 85;
 
     private StructureGuesser() {
     }
@@ -66,56 +71,61 @@ public final class StructureGuesser {
     public static ChestCategory guessContainerCategory(ClientLevel level, BlockPos pos) {
         Flags flags = scan(level, pos);
         int y = pos.getY();
+        boolean inNether = level.dimension().equals(Level.NETHER);
+        boolean inEnd = level.dimension().equals(Level.END);
 
         // 传送门遗迹：黑曜石 + 哭泣的黑曜石（该组合在世界生成中唯一属于传送门遗迹）；
-        // 主世界还可退一步用 黑曜石 + 下界岩 佐证（下界岩在野外只属于传送门遗迹）
+        // 主世界还可退一步用 黑曜石 + 下界岩 佐证（下界岩在野外只属于传送门遗迹）。
+        // 门限说明：传送门遗迹变体覆盖几乎所有主世界/下界群系、地表与掩埋都有，故不加群系/高度门限
         if (flags.obsidian && (flags.cryingObsidian
                 || (flags.netherrack && level.dimension().equals(Level.OVERWORLD)))) {
             return ChestCategory.RUINED_PORTAL;
         }
-        // 宝藏箱：原版生成规律极强——区块局部 X/Z 都是 9、单个普通箱子、上方与四侧基本被遮盖
-        if (isBuriedTreasurePattern(level, pos, flags)) {
+        // 宝藏箱：原版生成规律极强——区块局部 X/Z 都是 9、单个普通箱子、上方与四侧基本被遮盖；
+        // 且只生成在海滩群系（26.2 数据：beach / snowy_beach）
+        if (isBuriedTreasurePattern(level, pos, flags) && isBeachBiome(level, pos)) {
             return ChestCategory.TREASURE;
         }
-        // 试炼箱：试炼大厅只生成在深层地下（锚点 y -40~-20），用高度上限过滤地面凝灰岩建筑
+        // 试炼箱：试炼大厅锚点 y -40~-20、模板箱子相对锚 +1~+9，恒在深层地下；
+        // 群系范围=几乎整个主世界，没有过滤价值，只用高度门限
         if (flags.trial && y < UNDERGROUND_MAX_Y) {
             return ChestCategory.TRIAL;
         }
-        // 地牢：刷怪笼 + 苔石（缺一不可，与矿井明显区分）
+        // 地牢：刷怪笼 + 苔石（缺一不可，与矿井明显区分）。
+        // 门限说明：原版怪物房是代码型特征，无群系/高度数据（任意群系的地下都有）
         if (flags.spawner && flags.mossy) {
             return ChestCategory.DUNGEON;
         }
-        // 下界结构用"脚下方块"直接区分（实测：堡垒箱 100% 踩下界砖、堡垒遗迹箱 100% 踩镶金黑石）
+        // 下界结构：维度 + 群系表 + "脚下方块"直接区分（实测：堡垒箱 100% 踩下界砖、堡垒遗迹箱 100% 踩镶金黑石），
+        // 周边证据兜底（天然黑石斑块很常见，下界砖只属于堡垒，故堡垒优先于猪灵）；
+        // 26.2 数据：堡垒群系=荒芜/灵魂沙谷/绯红/诡异 + 玄武岩三角洲；猪灵堡垒不含玄武岩三角洲、锚点 y=33
         BlockState below = level.getBlockState(pos.below());
-        if (isNetherBrick(below)) {
+        if (inNether && isNetherFortressBiome(level, pos)
+                && (isNetherBrick(below) || flags.netherBricks)) {
             return ChestCategory.FORTRESS;
         }
-        if (isBlackstoneFamily(below)) {
+        if (inNether && isBastionBiome(level, pos) && y >= BASTION_MIN_Y && y <= BASTION_MAX_Y
+                && (isBlackstoneFamily(below) || flags.blackstone)) {
             return ChestCategory.BASTION;
         }
-        // 周边证据兜底：天然黑石斑块在下界很常见，而下界砖方块只属于堡垒（全部堡垒遗迹模板均无下界砖），
-        // 因此堡垒判定优先于猪灵判定
-        if (flags.netherBricks) {
-            return ChestCategory.FORTRESS;
-        }
-        if (flags.blackstone) {
-            return ChestCategory.BASTION;
-        }
-        if (flags.endCity) {
+        // 末地城（含末地船）：末地维度 + 高岛/中岛群系
+        if (flags.endCity && inEnd && isEndCityBiome(level, pos)) {
             return ChestCategory.END_CITY;
         }
-        // 远古城市：锚点 y=-27（深暗只在地下），用高度上限过滤玩家地面幽匿装饰
-        if (flags.sculk && y < UNDERGROUND_MAX_Y) {
+        // 远古城市：深暗之域群系 + 锚点 y=-27，用高度上限过滤玩家地面幽匿装饰
+        if (flags.sculk && biomeIn(level, pos, Biomes.DEEP_DARK) && y < UNDERGROUND_MAX_Y) {
             return ChestCategory.ANCIENT_CITY;
         }
-        // 村庄：干草捆 / 堆肥桶 / 钟；火把仅在排除矿井特征（铁轨、蛛网、刷怪笼）与深色橡木建筑（前哨站有火把）后作为证据
-        if (flags.hay || flags.composter || flags.bell
-                || (flags.torch && !flags.rail && !flags.cobweb && !flags.spawner && !flags.darkOak)) {
+        // 村庄：干草捆 / 堆肥桶 / 钟；火把仅在排除矿井特征（铁轨、蛛网、刷怪笼）与深色橡木建筑（前哨站有火把）后作为证据。
+        // 26.2 数据：村庄群系=平原/草甸/沙漠/热带草原/积雪平原/针叶林，全部为地表结构
+        if ((flags.hay || flags.composter || flags.bell
+                || (flags.torch && !flags.rail && !flags.cobweb && !flags.spawner && !flags.darkOak))
+                && isVillageBiome(level, pos) && y > SURFACE_MIN_Y) {
             return ChestCategory.VILLAGE;
         }
-        // 沙漠神殿：砂岩 + 陶瓦/TNT 且非水下（沙漠神殿从不在水下）；宝库在深坑里，用保守下限。
-        // 排除水下：海底废墟同样是砂岩/石砖系材料，不排除会被这里抢走
-        if (flags.sandstone && (flags.terracotta || flags.tnt) && y > SHALLOW_MIN_Y && !flags.water) {
+        // 沙漠神殿：砂岩 + 陶瓦/TNT + 沙漠群系 + 非水下（排除含砂岩的水下废墟）；宝库在深坑里，用保守下限
+        if (flags.sandstone && (flags.terracotta || flags.tnt) && !flags.water
+                && biomeIn(level, pos, Biomes.DESERT) && y > SHALLOW_MIN_Y) {
             return ChestCategory.DESERT;
         }
         // 丛林神庙：苔石 +（绊线陷阱或雕纹石砖），必须在丛林系群系；宝库在地下，用保守下限
@@ -123,48 +133,125 @@ public final class StructureGuesser {
                 && isJungleBiome(level, pos) && y > SHALLOW_MIN_Y) {
             return ChestCategory.JUNGLE;
         }
+        // 要塞：书架 + 石砖。门限说明：要塞由代码生成（环状分布），任意群系、任意深度，无门限可加
         if (flags.bookshelf && flags.stoneBricks) {
             return ChestCategory.STRONGHOLD;
         }
-        // 府邸：书架 + 深色橡木 + 深色森林群系 + 地表高度
+        // 府邸：书架 + 深色橡木 + 深色森林/浅色花园群系 + 地表高度
         if (flags.bookshelf && flags.darkOak && isMansionBiome(level, pos) && y > SURFACE_MIN_Y) {
             return ChestCategory.MANSION;
         }
-        // 前哨站：深色橡木 + 圆石/苔石族（哨塔顶层实测必有，生长变体为苔石）或羊毛帐篷，
-        // 不在深色森林（与府邸区分）；沉船只有木头、没有圆石，因此不会被误判到这里
-        if (flags.darkOak && !flags.bookshelf && !isMansionBiome(level, pos)
+        // 前哨站：深色橡木 + 圆石/苔石族（哨塔顶层实测必有，生长变体为苔石）或羊毛帐篷 + 哨站群系 + 地表高度；
+        // 沉船只有木头、没有圆石，因此不会被误判到这里
+        if (flags.darkOak && !flags.bookshelf && isOutpostBiome(level, pos)
                 && (flags.cobble || flags.mossy || flags.wool) && y > SURFACE_MIN_Y) {
             return ChestCategory.OUTPOST;
         }
-        // 矿井：刷怪笼+蛛网，或铁轨，或蛛网+木板（合并判定，只保留一处）
+        // 矿井：刷怪笼+蛛网，或铁轨，或蛛网+木板（合并判定，只保留一处）。
+        // 门限说明：矿井由代码生成、群系表=几乎全部主世界、无高度数据，故不加门限
         if ((flags.spawner && flags.cobweb) || flags.rail || (flags.cobweb && flags.planks)) {
             return ChestCategory.MINESHAFT;
         }
-        // 沉船：水下 + 任意木料（船体可能是深色橡木为主的混合木；只有木头、没有圆石）
-        if (flags.water && (flags.planks || flags.darkOak)) {
+        // 沉船：任意木料（含深色橡木为主的混合木）+ 沉船群系（海洋或海滩）；只有木头、没有圆石。
+        // 水下变体泡在水里；搁浅变体在海滩且没有火把等生活痕迹（与玩家海边木屋区分）
+        if ((flags.planks || flags.darkOak) && isShipwreckBiome(level, pos)
+                && (flags.water || (isBeachBiome(level, pos) && !flags.torch))) {
             return ChestCategory.SHIPWRECK;
         }
-        // 海底废墟：水下 + 石砖族（冷海）或砂岩族（暖海），且在海平面以下
-        if (flags.water && (flags.stoneBricks || flags.sandstone) && y < SEA_LEVEL_Y) {
+        // 海底废墟：水下 + 石砖族（冷海）或砂岩族（暖海）+ 海洋群系 + 海平面以下
+        if (flags.water && isOceanRuinBiome(level, pos)
+                && (flags.stoneBricks || flags.sandstone) && y < SEA_LEVEL_Y) {
             return ChestCategory.OCEAN_RUINS;
         }
-        // 雪屋：雪/冰 或 地下室特征（酿造台 + 橡木告示牌）；地下室在地表下，用保守下限
-        if ((flags.snow || (flags.brewingStand && flags.oakSign)) && y > SHALLOW_MIN_Y) {
+        // 雪屋：雪/冰 或 地下室特征（酿造台 + 橡木告示牌）+ 雪屋群系；地下室在地表下，用保守下限
+        if ((flags.snow || (flags.brewingStand && flags.oakSign))
+                && isIglooBiome(level, pos) && y > SHALLOW_MIN_Y) {
             return ChestCategory.IGLOO;
         }
         return ChestCategory.OTHER;
     }
 
+    /**
+     * 群系门限：任一命中即通过。
+     *
+     * <p>
+     * 下方所有群系表均直读 26.2 的 {@code data/.../worldgen/structure/*.json} 与
+     * {@code tags/worldgen/biome/has_structure/*.json}（含嵌套标签展开），并按模板实测校准过。
+     */
+    @SafeVarargs
+    private static boolean biomeIn(ClientLevel level, BlockPos pos, ResourceKey<Biome>... biomes) {
+        var biome = level.getBiome(pos);
+        for (ResourceKey<Biome> key : biomes) {
+            if (biome.is(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** 海滩群系：埋藏宝藏与搁浅沉船的生成范围（beach / snowy_beach）。 */
+    private static boolean isBeachBiome(ClientLevel level, BlockPos pos) {
+        return biomeIn(level, pos, Biomes.BEACH, Biomes.SNOWY_BEACH);
+    }
+
     /** 府邸群系：深色森林（含浅色花园）。府邸只在这些群系生成，前哨站不在这里。 */
     private static boolean isMansionBiome(ClientLevel level, BlockPos pos) {
-        var biome = level.getBiome(pos);
-        return biome.is(Biomes.DARK_FOREST) || biome.is(Biomes.PALE_GARDEN);
+        return biomeIn(level, pos, Biomes.DARK_FOREST, Biomes.PALE_GARDEN);
     }
 
     /** 丛林神庙群系：丛林 / 竹林（原版标签 #has_structure/jungle_temple 只有这两个）。 */
     private static boolean isJungleBiome(ClientLevel level, BlockPos pos) {
-        var biome = level.getBiome(pos);
-        return biome.is(Biomes.JUNGLE) || biome.is(Biomes.BAMBOO_JUNGLE);
+        return biomeIn(level, pos, Biomes.JUNGLE, Biomes.BAMBOO_JUNGLE);
+    }
+
+    /** 村庄群系：五种村庄的并集（平原+草甸 / 沙漠 / 热带草原 / 积雪平原 / 针叶林）。 */
+    private static boolean isVillageBiome(ClientLevel level, BlockPos pos) {
+        return biomeIn(level, pos, Biomes.PLAINS, Biomes.MEADOW, Biomes.DESERT, Biomes.SAVANNA,
+                Biomes.SNOWY_PLAINS, Biomes.TAIGA);
+    }
+
+    /** 前哨站群系（26.2 数据；含各山地变体，天然不含深色森林）。 */
+    private static boolean isOutpostBiome(ClientLevel level, BlockPos pos) {
+        return biomeIn(level, pos, Biomes.DESERT, Biomes.PLAINS, Biomes.SAVANNA, Biomes.SNOWY_PLAINS,
+                Biomes.TAIGA, Biomes.MEADOW, Biomes.FROZEN_PEAKS, Biomes.JAGGED_PEAKS,
+                Biomes.STONY_PEAKS, Biomes.SNOWY_SLOPES, Biomes.CHERRY_GROVE, Biomes.GROVE);
+    }
+
+    /** 堡垒（下界要塞）群系：荒芜 / 灵魂沙谷 / 绯红森林 / 诡异森林 + 玄武岩三角洲。 */
+    private static boolean isNetherFortressBiome(ClientLevel level, BlockPos pos) {
+        return biomeIn(level, pos, Biomes.NETHER_WASTES, Biomes.SOUL_SAND_VALLEY,
+                Biomes.CRIMSON_FOREST, Biomes.WARPED_FOREST, Biomes.BASALT_DELTAS);
+    }
+
+    /** 猪灵堡垒群系（26.2 数据不含玄武岩三角洲）。 */
+    private static boolean isBastionBiome(ClientLevel level, BlockPos pos) {
+        return biomeIn(level, pos, Biomes.NETHER_WASTES, Biomes.SOUL_SAND_VALLEY,
+                Biomes.CRIMSON_FOREST, Biomes.WARPED_FOREST);
+    }
+
+    /** 末地城群系：高岛 / 中岛（末地船是末地城的一部分）。 */
+    private static boolean isEndCityBiome(ClientLevel level, BlockPos pos) {
+        return biomeIn(level, pos, Biomes.END_HIGHLANDS, Biomes.END_MIDLANDS);
+    }
+
+    /** 沉船群系：全部海洋 + 海滩（水下与搁浅两个变体）。 */
+    private static boolean isShipwreckBiome(ClientLevel level, BlockPos pos) {
+        return biomeIn(level, pos, Biomes.OCEAN, Biomes.DEEP_OCEAN, Biomes.COLD_OCEAN,
+                Biomes.DEEP_COLD_OCEAN, Biomes.FROZEN_OCEAN, Biomes.DEEP_FROZEN_OCEAN,
+                Biomes.LUKEWARM_OCEAN, Biomes.DEEP_LUKEWARM_OCEAN, Biomes.WARM_OCEAN,
+                Biomes.BEACH, Biomes.SNOWY_BEACH);
+    }
+
+    /** 海底废墟群系：冷海 6 + 暖海 3（两个变体的并集）。 */
+    private static boolean isOceanRuinBiome(ClientLevel level, BlockPos pos) {
+        return biomeIn(level, pos, Biomes.FROZEN_OCEAN, Biomes.COLD_OCEAN, Biomes.OCEAN,
+                Biomes.DEEP_FROZEN_OCEAN, Biomes.DEEP_COLD_OCEAN, Biomes.DEEP_OCEAN,
+                Biomes.LUKEWARM_OCEAN, Biomes.WARM_OCEAN, Biomes.DEEP_LUKEWARM_OCEAN);
+    }
+
+    /** 雪屋群系（26.2 数据）。 */
+    private static boolean isIglooBiome(ClientLevel level, BlockPos pos) {
+        return biomeIn(level, pos, Biomes.SNOWY_PLAINS, Biomes.SNOWY_TAIGA, Biomes.SNOWY_SLOPES);
     }
 
     /**
