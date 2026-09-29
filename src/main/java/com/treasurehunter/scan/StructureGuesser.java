@@ -115,14 +115,16 @@ public final class StructureGuesser {
         if (flags.endCity && inEnd) {
             return ChestCategory.END_CITY;
         }
-        // 远古城市：幽匿 或 深层板岩砖 + 深暗之域群系 + 锚点 y=-27（高度上限过滤玩家地面幽匿装饰）
-        if ((flags.sculk || flags.deepslateTiles) && biomeIn(level, pos, Biomes.DEEP_DARK)
-                && y < UNDERGROUND_MAX_Y) {
+        // 远古城市：幽匿 或 深层板岩砖 + 锚点 y=-27 高度上限
+        // （不强制深暗之域群系——部分古城箱子生成在群系边界之外）
+        if ((flags.sculk || flags.deepslateTiles) && y < UNDERGROUND_MAX_Y) {
             return ChestCategory.ANCIENT_CITY;
         }
-        // 村庄：干草捆 / 堆肥桶 / 钟；火把仅在排除矿井特征（铁轨、蛛网、刷怪笼）与深色橡木建筑（前哨站有火把）后作为证据。
+        // 村庄：干草捆 / 堆肥桶 / 钟；床+火把+土径（村庄房屋的生活痕迹组合，沙漠村庄无土径、走下面的火把兜底）；
+        // 火把仅在排除矿井特征（铁轨、蛛网、刷怪笼）与深色橡木建筑（前哨站有火把）后作为证据。
         // 26.2 数据：村庄群系=平原/草甸/沙漠/热带草原/积雪平原/针叶林，全部为地表结构
         if ((flags.hay || flags.composter || flags.bell
+                || (flags.path && flags.bed && flags.torch)
                 || (flags.torch && !flags.rail && !flags.cobweb && !flags.spawner && !flags.darkOak))
                 && isVillageBiome(level, pos) && y > SURFACE_MIN_Y) {
             return ChestCategory.VILLAGE;
@@ -232,11 +234,6 @@ public final class StructureGuesser {
     private static boolean isBastionBiome(ClientLevel level, BlockPos pos) {
         return biomeIn(level, pos, Biomes.NETHER_WASTES, Biomes.SOUL_SAND_VALLEY,
                 Biomes.CRIMSON_FOREST, Biomes.WARPED_FOREST);
-    }
-
-    /** 末地城群系：高岛 / 中岛（末地船是末地城的一部分）。 */
-    private static boolean isEndCityBiome(ClientLevel level, BlockPos pos) {
-        return biomeIn(level, pos, Biomes.END_HIGHLANDS, Biomes.END_MIDLANDS);
     }
 
     /** 沉船群系：全部海洋 + 海滩（水下与搁浅两个变体）。 */
@@ -355,6 +352,10 @@ public final class StructureGuesser {
                 flags.sculk = true;
             } else if (block == Blocks.DEEPSLATE_TILES) {
                 flags.deepslateTiles = true;
+            } else if (state.is(BlockTags.BEDS)) {
+                flags.bed = true;
+            } else if (block == Blocks.DIRT_PATH) {
+                flags.path = true;
             } else if (block == Blocks.HAY_BLOCK) {
                 flags.hay = true;
             } else if (block == Blocks.COMPOSTER) {
@@ -446,6 +447,8 @@ public final class StructureGuesser {
         boolean endCity;
         boolean sculk;
         boolean deepslateTiles;
+        boolean bed;
+        boolean path;
         boolean hay;
         boolean composter;
         boolean bell;
