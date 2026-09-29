@@ -10,33 +10,31 @@ import net.minecraft.network.chat.Component;
  * （如 埋藏的宝藏 / 刷怪房 / 废弃矿井 / 堡垒遗迹 / 下界要塞 / 废弃传送门）。
  */
 public enum ChestCategory {
-    TREASURE("treasure", "宝", "GOLD"),
-    TRIAL("trial", "试", "AQUA"),
-    MINESHAFT("mineshaft", "矿", "DARK_GRAY"),
-    DUNGEON("dungeon", "怪", "DARK_GREEN"),
-    BASTION("bastion", "堡", "PINK"),
-    FORTRESS("fortress", "要", "DARK_RED"),
-    END_CITY("end_city", "末", "PURPLE"),
-    ANCIENT_CITY("ancient_city", "古", "DARK_AQUA"),
-    VILLAGE("village", "村", "GREEN"),
-    DESERT("desert", "沙", "YELLOW"),
-    JUNGLE("jungle", "林", "LIME"),
-    STRONGHOLD("stronghold", "要", "LIGHT_BLUE"),
-    OUTPOST("outpost", "哨", "BROWN"),
-    MANSION("mansion", "邸", "DARK_PURPLE"),
-    SHIPWRECK("shipwreck", "船", "DARK_BLUE"),
-    IGLOO("igloo", "雪", "WHITE"),
-    OCEAN_RUINS("ocean_ruins", "海", "BLUE"),
-    RUINED_PORTAL("ruined_portal", "门", "MAGENTA"),
-    OTHER("other", "箱", "GRAY");
+    TREASURE("treasure", "GOLD"),
+    TRIAL("trial", "AQUA"),
+    MINESHAFT("mineshaft", "DARK_GRAY"),
+    DUNGEON("dungeon", "DARK_GREEN"),
+    BASTION("bastion", "PINK"),
+    FORTRESS("fortress", "DARK_RED"),
+    END_CITY("end_city", "PURPLE"),
+    ANCIENT_CITY("ancient_city", "DARK_AQUA"),
+    VILLAGE("village", "GREEN"),
+    DESERT("desert", "YELLOW"),
+    JUNGLE("jungle", "LIME"),
+    STRONGHOLD("stronghold", "LIGHT_BLUE"),
+    OUTPOST("outpost", "BROWN"),
+    MANSION("mansion", "DARK_PURPLE"),
+    SHIPWRECK("shipwreck", "DARK_BLUE"),
+    IGLOO("igloo", "WHITE"),
+    OCEAN_RUINS("ocean_ruins", "BLUE"),
+    RUINED_PORTAL("ruined_portal", "MAGENTA"),
+    OTHER("other", "GRAY");
 
     private final String id;
-    private final String initial;
     private final String colorEnumName;
 
-    ChestCategory(String id, String initial, String colorEnumName) {
+    ChestCategory(String id, String colorEnumName) {
         this.id = id;
-        this.initial = initial;
         this.colorEnumName = colorEnumName;
     }
 
@@ -50,9 +48,9 @@ public enum ChestCategory {
         return Component.translatable(translationKey());
     }
 
-    /** 地图上显示的单个代表汉字。 */
+    /** 地图上显示的简称（随语言本地化：中文单字 / 英文双字母缩写）。 */
     public String initial() {
-        return initial;
+        return Component.translatable("initial.treasurehunter." + id).getString();
     }
 
     /** Xaero {@code WaypointColor} 枚举常量名。 */

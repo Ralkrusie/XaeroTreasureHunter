@@ -89,7 +89,8 @@ public class TreasureHunterMod implements ClientModInitializer {
                 scanner.disable();
                 if (client.player != null) {
                     client.player.sendOverlayMessage(Component.literal("Xaero TreasureHunter: ")
-                            .append(Component.translatable("message.treasurehunter.cleared", removed)));
+                            .append(Component.translatable("message.treasurehunter.cleared", removed,
+                                    toggleKey.getTranslatedKeyMessage())));
                 }
             }
             while (settingsKey.consumeClick()) {

@@ -8,18 +8,16 @@ import net.minecraft.world.level.block.state.BlockState;
  * 可标记的目标方块类型（名称走语言文件，中英双语）。
  */
 public enum TargetType {
-    SPAWNER("spawner", "S", "RED"),
-    CHEST("chest", "箱", "GOLD"),
-    BARREL("barrel", "桶", "BROWN"),
-    BELL("bell", "B", "AQUA");
+    SPAWNER("spawner", "RED"),
+    CHEST("chest", "GOLD"),
+    BARREL("barrel", "BROWN"),
+    BELL("bell", "AQUA");
 
     private final String id;
-    private final String initials;
     private final String colorEnumName;
 
-    TargetType(String id, String initials, String colorEnumName) {
+    TargetType(String id, String colorEnumName) {
         this.id = id;
-        this.initials = initials;
         this.colorEnumName = colorEnumName;
     }
 
@@ -33,9 +31,9 @@ public enum TargetType {
         return Component.translatable(translationKey());
     }
 
-    /** 地图上显示的简称：容器用单个汉字，其它类型用单个字母。 */
+    /** 地图上显示的简称（随语言本地化）。 */
     public String initials() {
-        return initials;
+        return Component.translatable("initial.treasurehunter." + id).getString();
     }
 
     /** Xaero {@code WaypointColor} 枚举常量名。 */

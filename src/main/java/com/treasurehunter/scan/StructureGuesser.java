@@ -77,10 +77,12 @@ public final class StructureGuesser {
         boolean inEnd = level.dimension().equals(Level.END);
 
         // 废弃传送门箱：黑曜石 + 哭泣的黑曜石（该组合在世界生成中唯一属于废弃传送门）；
-        // 主世界还可退一步用 黑曜石 + 下界岩 佐证（下界岩在野外只属于废弃传送门）。
+        // 主世界可退一步用 黑曜石 + 下界岩 佐证；下界直接以黑曜石判定
+        // （下界要塞/堡垒遗迹都不含黑曜石，黑曜石在下界只会来自废弃传送门）
         // 门限说明：废弃传送门变体覆盖几乎所有主世界/下界群系、地表与掩埋都有，故不加群系/高度门限
         if (flags.obsidian && (flags.cryingObsidian
-                || (flags.netherrack && level.dimension().equals(Level.OVERWORLD)))) {
+                || (flags.netherrack && level.dimension().equals(Level.OVERWORLD))
+                || level.dimension().equals(Level.NETHER))) {
             return ChestCategory.RUINED_PORTAL;
         }
         // 埋藏的宝藏箱：原版生成规律极强——区块局部 X/Z 都是 9、单个普通箱子、上方与四侧基本被遮盖；
@@ -98,24 +100,24 @@ public final class StructureGuesser {
         if (flags.spawner && flags.mossy) {
             return ChestCategory.DUNGEON;
         }
-        // 下界结构：维度 + 群系表 + "脚下方块"直接区分（实测：下界要塞箱 100% 踩下界砖、堡垒遗迹箱 100% 踩镶金黑石），
-        // 周边证据兜底（天然黑石斑块很常见，下界砖只属于下界要塞，故下界要塞优先于堡垒遗迹）；
+        // 下界结构：维度 + 群系表 + "脚下方块"直接区分（NBT 实测：下界要塞箱 100% 踩下界砖、堡垒遗迹箱 100% 踩镶金黑石）；
+        // 下界要塞当且仅当下界砖在正下方——不再用"周边有下界砖"兜底，那会把紧邻要塞的堡垒遗迹箱抢走
         // 26.2 数据：下界要塞群系=荒芜/灵魂沙谷/绯红/诡异 + 玄武岩三角洲；堡垒遗迹不含玄武岩三角洲、锚点 y=33
         BlockState below = level.getBlockState(pos.below());
-        if (inNether && isNetherFortressBiome(level, pos)
-                && (isNetherBrick(below) || flags.netherBricks)) {
+        if (inNether && isNetherFortressBiome(level, pos) && isNetherBrick(below)) {
             return ChestCategory.FORTRESS;
         }
         if (inNether && isBastionBiome(level, pos) && y >= BASTION_MIN_Y && y <= BASTION_MAX_Y
                 && (isBlackstoneFamily(below) || flags.blackstone)) {
             return ChestCategory.BASTION;
         }
-        // 末地城（含末地船）：末地维度 + 高岛/中岛群系
-        if (flags.endCity && inEnd && isEndCityBiome(level, pos)) {
+        // 末地城（含末地船）：末地维度 + 紫珀/末地石砖（不再检测群系——紫珀只在末地城出现）
+        if (flags.endCity && inEnd) {
             return ChestCategory.END_CITY;
         }
-        // 远古城市：深暗之域群系 + 锚点 y=-27，用高度上限过滤玩家地面幽匿装饰
-        if (flags.sculk && biomeIn(level, pos, Biomes.DEEP_DARK) && y < UNDERGROUND_MAX_Y) {
+        // 远古城市：幽匿 或 深层板岩砖 + 深暗之域群系 + 锚点 y=-27（高度上限过滤玩家地面幽匿装饰）
+        if ((flags.sculk || flags.deepslateTiles) && biomeIn(level, pos, Biomes.DEEP_DARK)
+                && y < UNDERGROUND_MAX_Y) {
             return ChestCategory.ANCIENT_CITY;
         }
         // 村庄：干草捆 / 堆肥桶 / 钟；火把仅在排除矿井特征（铁轨、蛛网、刷怪笼）与深色橡木建筑（前哨站有火把）后作为证据。
@@ -135,12 +137,20 @@ public final class StructureGuesser {
                 && isJungleBiome(level, pos) && y > SHALLOW_MIN_Y) {
             return ChestCategory.JUNGLE;
         }
-        // 要塞：书架 + 石砖。门限说明：要塞由代码生成（环状分布），任意群系、任意深度，无门限可加
-        if (flags.bookshelf && flags.stoneBricks) {
+        // 雪屋：地下室特征（酿造台 + 橡木告示牌——NBT 实测地下室必含）或 雪块 + 梯子/陷阱门等木质暗道；
+        // 不设群系门限（地下室在地表深处，群系可能与雪原不一致）；雪地村庄房屋无梯子/陷阱门，不会误捕
+        if (((flags.brewingStand && flags.oakSign) || (flags.snow && (flags.ladder || flags.trapdoor)))
+                && y > SHALLOW_MIN_Y) {
+            return ChestCategory.IGLOO;
+        }
+        // 要塞：石砖族（图书馆之外、附近没有书架的走廊/传送门室箱同样覆盖）。
+        // 门限说明：要塞由代码生成（环状分布），任意群系、任意深度；排除水下（水下石砖交给海底废墟）
+        if (flags.stoneBricks && !flags.water) {
             return ChestCategory.STRONGHOLD;
         }
-        // 林地府邸箱：书架 + 深色橡木 + 深色森林/浅色花园群系 + 地表高度
-        if (flags.bookshelf && flags.darkOak && isMansionBiome(level, pos) && y > SURFACE_MIN_Y) {
+        // 林地府邸箱：深色橡木木板 + 深色森林/浅色花园群系 + 地表高度
+        // （府邸箱子多数附近没有书架，书架不再是必要条件；用木板排除自然深色橡木树的原木）
+        if (flags.darkOakPlanks && isMansionBiome(level, pos) && y > SURFACE_MIN_Y) {
             return ChestCategory.MANSION;
         }
         // 掠夺者前哨站箱：深色橡木 + 圆石/苔石族（哨塔顶层实测必有，生长变体为苔石）或羊毛帐篷 + 前哨站群系 + 地表高度；
@@ -152,9 +162,9 @@ public final class StructureGuesser {
         // 废弃矿井箱：原版矿井的战利品全部在运输矿车（实体）里，没有普通箱方块——
         // 矿车箱由 MarkerScanner 的实体扫描直接归类，这里不设方块判定
         // 沉船：任意木制部件（wiki：仅由 原木/木板/楼梯/台阶/栅栏/门/活板门 组成，任意木种、通常一船两种木）
-        // + 沉船群系（全部海洋 + 海滩）；水下变体泡在水里；搁浅变体在海滩且没有火把/铁轨/蛛网等生活痕迹
-        if (flags.wood && isShipwreckBiome(level, pos)
-                && (flags.water || (isBeachBiome(level, pos) && !flags.torch && !flags.rail && !flags.cobweb))) {
+        // + 沉船群系（全部海洋 + 海滩）+ 无火把/铁轨/蛛网等人为痕迹（村庄房屋、玩家建筑会被排除）
+        if (flags.wood && isShipwreckBiome(level, pos) && !flags.torch && !flags.rail && !flags.cobweb
+                && (flags.water || isBeachBiome(level, pos))) {
             return ChestCategory.SHIPWRECK;
         }
         // 海底废墟：水下 + 海洋群系 + 海平面以下 + 冷海石砖族（石砖/苔石砖/裂纹石砖）
@@ -162,11 +172,6 @@ public final class StructureGuesser {
         if (flags.water && isOceanRuinBiome(level, pos)
                 && (flags.stoneBricks || flags.sandstone) && y < SEA_LEVEL_Y) {
             return ChestCategory.OCEAN_RUINS;
-        }
-        // 雪屋：雪/冰 或 地下室特征（酿造台 + 橡木告示牌）+ 雪屋群系；地下室在地表下，用保守下限
-        if ((flags.snow || (flags.brewingStand && flags.oakSign))
-                && isIglooBiome(level, pos) && y > SHALLOW_MIN_Y) {
-            return ChestCategory.IGLOO;
         }
         return ChestCategory.OTHER;
     }
@@ -247,11 +252,6 @@ public final class StructureGuesser {
         return biomeIn(level, pos, Biomes.FROZEN_OCEAN, Biomes.COLD_OCEAN, Biomes.OCEAN,
                 Biomes.DEEP_FROZEN_OCEAN, Biomes.DEEP_COLD_OCEAN, Biomes.DEEP_OCEAN,
                 Biomes.LUKEWARM_OCEAN, Biomes.WARM_OCEAN, Biomes.DEEP_LUKEWARM_OCEAN);
-    }
-
-    /** 雪屋群系（26.2 数据）。 */
-    private static boolean isIglooBiome(ClientLevel level, BlockPos pos) {
-        return biomeIn(level, pos, Biomes.SNOWY_PLAINS, Biomes.SNOWY_TAIGA, Biomes.SNOWY_SLOPES);
     }
 
     /**
@@ -353,6 +353,8 @@ public final class StructureGuesser {
                 flags.endCity = true;
             } else if (block == Blocks.SCULK || block == Blocks.SCULK_SENSOR) {
                 flags.sculk = true;
+            } else if (block == Blocks.DEEPSLATE_TILES) {
+                flags.deepslateTiles = true;
             } else if (block == Blocks.HAY_BLOCK) {
                 flags.hay = true;
             } else if (block == Blocks.COMPOSTER) {
@@ -376,7 +378,11 @@ public final class StructureGuesser {
             } else if (block == Blocks.STONE_BRICKS || block == Blocks.MOSSY_STONE_BRICKS
                     || block == Blocks.CRACKED_STONE_BRICKS) {
                 flags.stoneBricks = true;
-            } else if (block == Blocks.DARK_OAK_PLANKS || block == Blocks.DARK_OAK_LOG) {
+            } else if (block == Blocks.DARK_OAK_PLANKS) {
+                flags.darkOak = true;
+                flags.darkOakPlanks = true;
+                flags.wood = true;
+            } else if (block == Blocks.DARK_OAK_LOG) {
                 flags.darkOak = true;
                 flags.wood = true;
             } else if (block == Blocks.DARK_OAK_FENCE) {
@@ -404,6 +410,8 @@ public final class StructureGuesser {
             } else if (block == Blocks.SNOW_BLOCK || block == Blocks.ICE
                     || block == Blocks.PACKED_ICE || block == Blocks.BLUE_ICE) {
                 flags.snow = true;
+            } else if (block == Blocks.LADDER) {
+                flags.ladder = true;
             } else if (block == Blocks.BREWING_STAND) {
                 flags.brewingStand = true;
             } else if (block == Blocks.OAK_SIGN || block == Blocks.OAK_WALL_SIGN) {
@@ -414,6 +422,9 @@ public final class StructureGuesser {
                     || state.is(BlockTags.WOODEN_TRAPDOORS)) {
                 // 沉船的全部结构件（wiki：仅由 原木/木板/楼梯/台阶/栅栏/门/活板门 组成，任意木种）
                 flags.wood = true;
+                if (state.is(BlockTags.WOODEN_TRAPDOORS)) {
+                    flags.trapdoor = true; // 雪屋暗道/木结构证据
+                }
             } else if (block == Blocks.CHEST || block == Blocks.TRAPPED_CHEST || block == Blocks.BARREL) {
                 flags.containers++;
                 if (Math.abs(cursor.getX() - center.getX()) <= TREASURE_RANGE
@@ -434,6 +445,7 @@ public final class StructureGuesser {
         boolean netherBricks;
         boolean endCity;
         boolean sculk;
+        boolean deepslateTiles;
         boolean hay;
         boolean composter;
         boolean bell;
@@ -445,6 +457,7 @@ public final class StructureGuesser {
         boolean stoneBricks;
         boolean chiseledStoneBricks;
         boolean darkOak;
+        boolean darkOakPlanks;
         boolean darkOakFence;
         boolean wool;
         boolean rail;
@@ -455,6 +468,8 @@ public final class StructureGuesser {
         boolean netherrack;
         boolean water;
         boolean snow;
+        boolean ladder;
+        boolean trapdoor;
         boolean brewingStand;
         boolean oakSign;
         boolean wood;
