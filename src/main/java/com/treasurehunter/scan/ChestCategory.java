@@ -11,7 +11,7 @@ import net.minecraft.network.chat.Component;
  */
 public enum ChestCategory {
     TREASURE("treasure", "GOLD"),
-    TRIAL("trial", "AQUA"),
+    TRIAL("trial", "LIGHT_BLUE"),
     MINESHAFT("mineshaft", "DARK_GRAY"),
     DUNGEON("dungeon", "DARK_GREEN"),
     BASTION("bastion", "PINK"),

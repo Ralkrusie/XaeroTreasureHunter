@@ -139,10 +139,10 @@ public final class StructureGuesser {
                 && isJungleBiome(level, pos) && y > SHALLOW_MIN_Y) {
             return ChestCategory.JUNGLE;
         }
-        // 雪屋：地下室特征（酿造台 + 橡木告示牌——NBT 实测地下室必含）或 雪块 + 梯子/陷阱门等木质暗道；
-        // 不设群系门限（地下室在地表深处，群系可能与雪原不一致）；雪地村庄房屋无梯子/陷阱门，不会误捕
-        if (((flags.brewingStand && flags.oakSign) || (flags.snow && (flags.ladder || flags.trapdoor)))
-                && y > SHALLOW_MIN_Y) {
+        // 雪屋：只用地下室特征（酿造台 + 橡木告示牌，NBT 实测地下室必含）；
+        // 不再用"雪块 + 梯子/陷阱门"证据（冻结海洋的沉船带冰面与陷阱门，会被误判成雪屋）
+        // 不设群系门限（地下室在地表深处，群系可能与雪原不一致）
+        if (flags.brewingStand && flags.oakSign && y > SHALLOW_MIN_Y) {
             return ChestCategory.IGLOO;
         }
         // 要塞：石砖族（图书馆之外、附近没有书架的走廊/传送门室箱同样覆盖）。
