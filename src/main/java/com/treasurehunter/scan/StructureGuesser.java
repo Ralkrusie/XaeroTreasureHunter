@@ -130,8 +130,8 @@ public final class StructureGuesser {
                 && biomeIn(level, pos, Biomes.DESERT) && y > SHALLOW_MIN_Y) {
             return ChestCategory.DESERT;
         }
-        // 丛林神庙：苔石 +（绊线陷阱或雕纹石砖），必须在丛林系群系；宝库在地下，用保守下限
-        if (flags.mossy && (flags.tripwire || flags.chiseledStoneBricks)
+        // 丛林神庙：苔石 +（绊线陷阱 / 雕纹石砖 / 发射器），必须在丛林系群系；宝库在地下，用保守下限
+        if (flags.mossy && (flags.tripwire || flags.chiseledStoneBricks || flags.dispenser)
                 && isJungleBiome(level, pos) && y > SHALLOW_MIN_Y) {
             return ChestCategory.JUNGLE;
         }
@@ -151,13 +151,14 @@ public final class StructureGuesser {
         }
         // 废弃矿井箱：原版矿井的战利品全部在运输矿车（实体）里，没有普通箱方块——
         // 矿车箱由 MarkerScanner 的实体扫描直接归类，这里不设方块判定
-        // 沉船：任意木料（含深色橡木为主的混合木）+ 沉船群系（海洋或海滩）；只有木头、没有圆石。
-        // 水下变体泡在水里；搁浅变体在海滩且没有火把等生活痕迹（与玩家海边木屋区分）
-        if ((flags.planks || flags.darkOak) && isShipwreckBiome(level, pos)
-                && (flags.water || (isBeachBiome(level, pos) && !flags.torch))) {
+        // 沉船：任意木制部件（wiki：仅由 原木/木板/楼梯/台阶/栅栏/门/活板门 组成，任意木种、通常一船两种木）
+        // + 沉船群系（全部海洋 + 海滩）；水下变体泡在水里；搁浅变体在海滩且没有火把/铁轨/蛛网等生活痕迹
+        if (flags.wood && isShipwreckBiome(level, pos)
+                && (flags.water || (isBeachBiome(level, pos) && !flags.torch && !flags.rail && !flags.cobweb))) {
             return ChestCategory.SHIPWRECK;
         }
-        // 海底废墟：水下 + 石砖族（冷海）或砂岩族（暖海）+ 海洋群系 + 海平面以下
+        // 海底废墟：水下 + 海洋群系 + 海平面以下 + 冷海石砖族（石砖/苔石砖/裂纹石砖）
+        // 或暖海砂岩族（砂岩/切制砂岩/雕纹砂岩）——wiki：冷/暖变体都有战利品箱，两者组成互不重叠
         if (flags.water && isOceanRuinBiome(level, pos)
                 && (flags.stoneBricks || flags.sandstone) && y < SEA_LEVEL_Y) {
             return ChestCategory.OCEAN_RUINS;
@@ -377,8 +378,10 @@ public final class StructureGuesser {
                 flags.stoneBricks = true;
             } else if (block == Blocks.DARK_OAK_PLANKS || block == Blocks.DARK_OAK_LOG) {
                 flags.darkOak = true;
+                flags.wood = true;
             } else if (block == Blocks.DARK_OAK_FENCE) {
                 flags.darkOakFence = true;
+                flags.wood = true;
             } else if (state.is(BlockTags.WOOL)) {
                 flags.wool = true;
             } else if (state.is(BlockTags.RAILS)) {
@@ -387,6 +390,9 @@ public final class StructureGuesser {
                 flags.cobweb = true;
             } else if (block == Blocks.TRIPWIRE || block == Blocks.TRIPWIRE_HOOK) {
                 flags.tripwire = true;
+            } else if (block == Blocks.DISPENSER) {
+                // 丛林神庙的箭矢发射器（wiki：构成方块含发射器）
+                flags.dispenser = true;
             } else if (block == Blocks.OBSIDIAN) {
                 flags.obsidian = true;
             } else if (block == Blocks.CRYING_OBSIDIAN) {
@@ -402,8 +408,12 @@ public final class StructureGuesser {
                 flags.brewingStand = true;
             } else if (block == Blocks.OAK_SIGN || block == Blocks.OAK_WALL_SIGN) {
                 flags.oakSign = true;
-            } else if (state.is(BlockTags.PLANKS) || state.is(BlockTags.LOGS)) {
-                flags.planks = true;
+            } else if (state.is(BlockTags.PLANKS) || state.is(BlockTags.LOGS)
+                    || state.is(BlockTags.WOODEN_STAIRS) || state.is(BlockTags.WOODEN_SLABS)
+                    || state.is(BlockTags.WOODEN_FENCES) || state.is(BlockTags.WOODEN_DOORS)
+                    || state.is(BlockTags.WOODEN_TRAPDOORS)) {
+                // 沉船的全部结构件（wiki：仅由 原木/木板/楼梯/台阶/栅栏/门/活板门 组成，任意木种）
+                flags.wood = true;
             } else if (block == Blocks.CHEST || block == Blocks.TRAPPED_CHEST || block == Blocks.BARREL) {
                 flags.containers++;
                 if (Math.abs(cursor.getX() - center.getX()) <= TREASURE_RANGE
@@ -447,7 +457,8 @@ public final class StructureGuesser {
         boolean snow;
         boolean brewingStand;
         boolean oakSign;
-        boolean planks;
+        boolean wood;
+        boolean dispenser;
         int containers;
         int containersNear;
     }

@@ -15,7 +15,7 @@ public enum ChestCategory {
     MINESHAFT("mineshaft", "矿", "DARK_GRAY"),
     DUNGEON("dungeon", "怪", "DARK_GREEN"),
     BASTION("bastion", "堡", "PINK"),
-    FORTRESS("fortress", "界", "DARK_RED"),
+    FORTRESS("fortress", "要", "DARK_RED"),
     END_CITY("end_city", "末", "PURPLE"),
     ANCIENT_CITY("ancient_city", "古", "DARK_AQUA"),
     VILLAGE("village", "村", "GREEN"),

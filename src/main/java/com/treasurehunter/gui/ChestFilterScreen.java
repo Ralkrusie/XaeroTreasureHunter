@@ -80,8 +80,9 @@ public class ChestFilterScreen extends Screen {
             }
             this.minecraft.setScreenAndShow(new ChestFilterScreen(this.parent, this.config));
         }).bounds(startX + footerWidth + spacingX, footerY, footerWidth, 20).build());
-        this.addRenderableWidget(Button.builder(Component.translatable("button.treasurehunter.back"), button -> this.onClose())
-                .bounds(startX + 2 * (footerWidth + spacingX), footerY, footerWidth, 20).build());
+        this.addRenderableWidget(
+                Button.builder(Component.translatable("button.treasurehunter.back"), button -> this.onClose())
+                        .bounds(startX + 2 * (footerWidth + spacingX), footerY, footerWidth, 20).build());
     }
 
     private Component categoryLabel(ChestCategory category) {

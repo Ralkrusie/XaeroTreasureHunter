@@ -4,12 +4,10 @@
     "key.treasurehunter.toggle": "切换扫描",
     "key.treasurehunter.clear": "清空标记",
     "key.treasurehunter.settings": "扫描设置",
-
     "target.treasurehunter.spawner": "刷怪笼",
     "target.treasurehunter.chest": "箱子",
     "target.treasurehunter.barrel": "木桶",
     "target.treasurehunter.bell": "钟",
-
     "category.treasurehunter.treasure": "埋藏的宝藏箱",
     "category.treasurehunter.trial": "试炼密室箱",
     "category.treasurehunter.mineshaft": "废弃矿井箱",
@@ -29,27 +27,23 @@
     "category.treasurehunter.ocean_ruins": "海底废墟箱",
     "category.treasurehunter.ruined_portal": "废弃传送门箱",
     "category.treasurehunter.other": "其他箱",
-
     "message.treasurehunter.toggle_on": "扫描已开启",
     "message.treasurehunter.toggle_off": "扫描已关闭",
     "message.treasurehunter.cleared": "已清除 %s 个标记，扫描已关闭（G 重新开启）",
     "message.treasurehunter.found": "发现%s @ %s, %s, %s",
     "message.treasurehunter.scavenged": "已搜刮 %s",
     "message.treasurehunter.spawner_label": "%s笼",
-
     "screen.treasurehunter.config.title": "Xaero TreasureHunter 扫描设置",
     "screen.treasurehunter.config.hint": "点击切换（立即保存）｜✔ 开 ✘ 关",
     "screen.treasurehunter.filter.title": "箱子类型过滤",
     "screen.treasurehunter.filter.hint": "✔=开 ✘=关；点击切换，关闭后该类不再扫描（已标记的会移除）",
     "screen.treasurehunter.state_on": "✔ %s：开",
     "screen.treasurehunter.state_off": "✘ %s：关",
-
     "option.treasurehunter.notify": "发现提示",
     "option.treasurehunter.singleplayer": "仅单人世界",
     "option.treasurehunter.smart": "来源智能识别",
     "option.treasurehunter.merge": "邻近标记合并",
     "option.treasurehunter.filter": "箱子类型过滤…",
-
     "button.treasurehunter.done": "完成",
     "button.treasurehunter.all_on": "全开",
     "button.treasurehunter.all_off": "全关",

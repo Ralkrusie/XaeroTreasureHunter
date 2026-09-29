@@ -84,7 +84,8 @@ public class TreasureHunterConfigScreen extends Screen {
         y += step;
 
         AbstractWidget mergeButton = this.addRenderableWidget(Button.builder(
-                stateLabel(Component.translatable("option.treasurehunter.merge"), config.mergeNearbyMarkers), button -> {
+                stateLabel(Component.translatable("option.treasurehunter.merge"), config.mergeNearbyMarkers),
+                button -> {
                     config.mergeNearbyMarkers = !config.mergeNearbyMarkers;
                     button.setMessage(stateLabel(Component.translatable("option.treasurehunter.merge"),
                             config.mergeNearbyMarkers));
@@ -100,8 +101,9 @@ public class TreasureHunterConfigScreen extends Screen {
         rows.add(new Row(filterButton, OptionIcons.filterIcon(), null));
         y += step + 10;
 
-        this.addRenderableWidget(Button.builder(Component.translatable("button.treasurehunter.done"), button -> this.onClose())
-                .bounds(x, y, buttonWidth, 20).build());
+        this.addRenderableWidget(
+                Button.builder(Component.translatable("button.treasurehunter.done"), button -> this.onClose())
+                        .bounds(x, y, buttonWidth, 20).build());
     }
 
     private void setTarget(TargetType type, boolean enabled) {
