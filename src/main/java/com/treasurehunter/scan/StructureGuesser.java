@@ -2,6 +2,7 @@ package com.treasurehunter.scan;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.Entity;
@@ -28,7 +29,7 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
  * 前者基于原版固定的 (9,9) 生成规律，后者是客户端同步的真实数据。
  */
 public final class StructureGuesser {
-    /** 分类扫描半径（水平）：地牢房间最大 9 格宽、刷怪笼居中、箱子贴墙（离中心 ≤4 格），8 格已很富余。 */
+    /** 分类扫描半径（水平）：刷怪房最大 9 格宽、刷怪笼居中、箱子贴墙（离中心 ≤4 格），8 格已很富余。 */
     private static final int RADIUS = 8;
     private static final int Y_RADIUS = 4;
     /** 宝藏箱"单箱"判定的邻近范围（保持原始 6 格，不随分类半径变化）。 */
@@ -40,31 +41,32 @@ public final class StructureGuesser {
      * 取值保守（宁可放低也不漏检）：沙漠神殿宝库可在地表下十几格，雪屋地下室在地表下数格。
      */
     private static final int SHALLOW_MIN_Y = 35;
-    /** 高度辅助：地下结构（试炼大厅锚点 -40~-20、远古城市锚点 -27）的判定上限，仅用于排除地表建筑。 */
+    /** 高度辅助：地下结构（试炼密室锚点 -40~-20、远古城市锚点 -27）的判定上限，仅用于排除地表建筑。 */
     private static final int UNDERGROUND_MAX_Y = 20;
     /** 海平面高度：海底废墟等水下结构的判定上限。 */
     private static final int SEA_LEVEL_Y = 63;
-    /** 猪灵堡垒锚点 y=33（26.2 数据）；模板箱子相对锚 +1~+29，装配后实测约 34~62，取宽松区间。 */
+    /** 堡垒遗迹锚点 y=33（26.2 数据）；模板箱子相对锚 +1~+29，装配后实测约 34~62，取宽松区间。 */
     private static final int BASTION_MIN_Y = 20;
     private static final int BASTION_MAX_Y = 85;
 
     private StructureGuesser() {
     }
 
-    /** 刷怪笼：客户端能拿到笼内生物数据，直接显示生物种类。 */
-    public static String guessSpawnerLabel(ClientLevel level, BlockPos pos) {
+    /** 刷怪笼：客户端能拿到笼内生物数据，直接显示生物种类（返回可本地化的组件）。 */
+    public static Component guessSpawnerLabel(ClientLevel level, BlockPos pos) {
         try {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof SpawnerBlockEntity spawner) {
                 Entity display = spawner.getSpawner().getOrCreateDisplayEntity(level, pos);
                 if (display != null) {
-                    return display.getType().getDescription().getString() + "笼";
+                    return Component.translatable("message.treasurehunter.spawner_label",
+                            display.getType().getDescription());
                 }
             }
         } catch (Throwable ignored) {
             // 读取失败时退回默认名称
         }
-        return "刷怪笼";
+        return Component.translatable("target.treasurehunter.spawner");
     }
 
     /** 箱子 / 木桶：按周边特征方块 + 群系 + 高度推断来源分类。 */
@@ -74,31 +76,31 @@ public final class StructureGuesser {
         boolean inNether = level.dimension().equals(Level.NETHER);
         boolean inEnd = level.dimension().equals(Level.END);
 
-        // 传送门遗迹：黑曜石 + 哭泣的黑曜石（该组合在世界生成中唯一属于传送门遗迹）；
-        // 主世界还可退一步用 黑曜石 + 下界岩 佐证（下界岩在野外只属于传送门遗迹）。
-        // 门限说明：传送门遗迹变体覆盖几乎所有主世界/下界群系、地表与掩埋都有，故不加群系/高度门限
+        // 废弃传送门箱：黑曜石 + 哭泣的黑曜石（该组合在世界生成中唯一属于废弃传送门）；
+        // 主世界还可退一步用 黑曜石 + 下界岩 佐证（下界岩在野外只属于废弃传送门）。
+        // 门限说明：废弃传送门变体覆盖几乎所有主世界/下界群系、地表与掩埋都有，故不加群系/高度门限
         if (flags.obsidian && (flags.cryingObsidian
                 || (flags.netherrack && level.dimension().equals(Level.OVERWORLD)))) {
             return ChestCategory.RUINED_PORTAL;
         }
-        // 宝藏箱：原版生成规律极强——区块局部 X/Z 都是 9、单个普通箱子、上方与四侧基本被遮盖；
+        // 埋藏的宝藏箱：原版生成规律极强——区块局部 X/Z 都是 9、单个普通箱子、上方与四侧基本被遮盖；
         // 且只生成在海滩群系（26.2 数据：beach / snowy_beach）
         if (isBuriedTreasurePattern(level, pos, flags) && isBeachBiome(level, pos)) {
             return ChestCategory.TREASURE;
         }
-        // 试炼箱：试炼大厅锚点 y -40~-20、模板箱子相对锚 +1~+9，恒在深层地下；
+        // 试炼密室箱：锚点 y -40~-20、模板箱子相对锚 +1~+9，恒在深层地下；
         // 群系范围=几乎整个主世界，没有过滤价值，只用高度门限
         if (flags.trial && y < UNDERGROUND_MAX_Y) {
             return ChestCategory.TRIAL;
         }
-        // 地牢：刷怪笼 + 苔石（缺一不可，与矿井明显区分）。
-        // 门限说明：原版怪物房是代码型特征，无群系/高度数据（任意群系的地下都有）
+        // 刷怪房箱（俗称地牢箱）：刷怪笼 + 苔石（缺一不可）。
+        // 门限说明：原版刷怪房是代码型特征，无群系/高度数据（任意群系的地下都有）
         if (flags.spawner && flags.mossy) {
             return ChestCategory.DUNGEON;
         }
-        // 下界结构：维度 + 群系表 + "脚下方块"直接区分（实测：堡垒箱 100% 踩下界砖、堡垒遗迹箱 100% 踩镶金黑石），
-        // 周边证据兜底（天然黑石斑块很常见，下界砖只属于堡垒，故堡垒优先于猪灵）；
-        // 26.2 数据：堡垒群系=荒芜/灵魂沙谷/绯红/诡异 + 玄武岩三角洲；猪灵堡垒不含玄武岩三角洲、锚点 y=33
+        // 下界结构：维度 + 群系表 + "脚下方块"直接区分（实测：下界要塞箱 100% 踩下界砖、堡垒遗迹箱 100% 踩镶金黑石），
+        // 周边证据兜底（天然黑石斑块很常见，下界砖只属于下界要塞，故下界要塞优先于堡垒遗迹）；
+        // 26.2 数据：下界要塞群系=荒芜/灵魂沙谷/绯红/诡异 + 玄武岩三角洲；堡垒遗迹不含玄武岩三角洲、锚点 y=33
         BlockState below = level.getBlockState(pos.below());
         if (inNether && isNetherFortressBiome(level, pos)
                 && (isNetherBrick(below) || flags.netherBricks)) {
@@ -137,21 +139,18 @@ public final class StructureGuesser {
         if (flags.bookshelf && flags.stoneBricks) {
             return ChestCategory.STRONGHOLD;
         }
-        // 府邸：书架 + 深色橡木 + 深色森林/浅色花园群系 + 地表高度
+        // 林地府邸箱：书架 + 深色橡木 + 深色森林/浅色花园群系 + 地表高度
         if (flags.bookshelf && flags.darkOak && isMansionBiome(level, pos) && y > SURFACE_MIN_Y) {
             return ChestCategory.MANSION;
         }
-        // 前哨站：深色橡木 + 圆石/苔石族（哨塔顶层实测必有，生长变体为苔石）或羊毛帐篷 + 哨站群系 + 地表高度；
+        // 掠夺者前哨站箱：深色橡木 + 圆石/苔石族（哨塔顶层实测必有，生长变体为苔石）或羊毛帐篷 + 前哨站群系 + 地表高度；
         // 沉船只有木头、没有圆石，因此不会被误判到这里
         if (flags.darkOak && !flags.bookshelf && isOutpostBiome(level, pos)
                 && (flags.cobble || flags.mossy || flags.wool) && y > SURFACE_MIN_Y) {
             return ChestCategory.OUTPOST;
         }
-        // 矿井：刷怪笼+蛛网，或铁轨，或蛛网+木板（合并判定，只保留一处）。
-        // 门限说明：矿井由代码生成、群系表=几乎全部主世界、无高度数据，故不加门限
-        if ((flags.spawner && flags.cobweb) || flags.rail || (flags.cobweb && flags.planks)) {
-            return ChestCategory.MINESHAFT;
-        }
+        // 废弃矿井箱：原版矿井的战利品全部在运输矿车（实体）里，没有普通箱方块——
+        // 矿车箱由 MarkerScanner 的实体扫描直接归类，这里不设方块判定
         // 沉船：任意木料（含深色橡木为主的混合木）+ 沉船群系（海洋或海滩）；只有木头、没有圆石。
         // 水下变体泡在水里；搁浅变体在海滩且没有火把等生活痕迹（与玩家海边木屋区分）
         if ((flags.planks || flags.darkOak) && isShipwreckBiome(level, pos)
@@ -217,13 +216,13 @@ public final class StructureGuesser {
                 Biomes.STONY_PEAKS, Biomes.SNOWY_SLOPES, Biomes.CHERRY_GROVE, Biomes.GROVE);
     }
 
-    /** 堡垒（下界要塞）群系：荒芜 / 灵魂沙谷 / 绯红森林 / 诡异森林 + 玄武岩三角洲。 */
+    /** 下界要塞群系：荒芜 / 灵魂沙谷 / 绯红森林 / 诡异森林 + 玄武岩三角洲。 */
     private static boolean isNetherFortressBiome(ClientLevel level, BlockPos pos) {
         return biomeIn(level, pos, Biomes.NETHER_WASTES, Biomes.SOUL_SAND_VALLEY,
                 Biomes.CRIMSON_FOREST, Biomes.WARPED_FOREST, Biomes.BASALT_DELTAS);
     }
 
-    /** 猪灵堡垒群系（26.2 数据不含玄武岩三角洲）。 */
+    /** 堡垒遗迹群系（26.2 数据不含玄武岩三角洲）。 */
     private static boolean isBastionBiome(ClientLevel level, BlockPos pos) {
         return biomeIn(level, pos, Biomes.NETHER_WASTES, Biomes.SOUL_SAND_VALLEY,
                 Biomes.CRIMSON_FOREST, Biomes.WARPED_FOREST);

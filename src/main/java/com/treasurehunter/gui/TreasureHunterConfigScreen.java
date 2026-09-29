@@ -30,7 +30,7 @@ public class TreasureHunterConfigScreen extends Screen {
     }
 
     public TreasureHunterConfigScreen(TreasureHunterConfig config) {
-        super(Component.literal("Xaero TreasureHunter 扫描设置"));
+        super(Component.translatable("screen.treasurehunter.config.title"));
         this.config = config;
     }
 
@@ -44,58 +44,63 @@ public class TreasureHunterConfigScreen extends Screen {
 
         for (TargetType type : TargetType.values()) {
             AbstractWidget widget = this.addRenderableWidget(Button.builder(
-                    stateLabel(type.displayName(), config.isEnabled(type)), button -> {
+                    stateLabel(type.label(), config.isEnabled(type)), button -> {
                         setTarget(type, !config.isEnabled(type));
-                        button.setMessage(stateLabel(type.displayName(), config.isEnabled(type)));
+                        button.setMessage(stateLabel(type.label(), config.isEnabled(type)));
                     }).bounds(x, y, buttonWidth, 20).build());
             rows.add(new Row(widget, OptionIcons.targetIcon(type), () -> config.isEnabled(type)));
             y += step;
         }
 
         AbstractWidget notifyButton = this.addRenderableWidget(Button.builder(
-                stateLabel("发现提示", config.notifyOnNew), button -> {
+                stateLabel(Component.translatable("option.treasurehunter.notify"), config.notifyOnNew), button -> {
                     config.notifyOnNew = !config.notifyOnNew;
-                    button.setMessage(stateLabel("发现提示", config.notifyOnNew));
+                    button.setMessage(stateLabel(Component.translatable("option.treasurehunter.notify"),
+                            config.notifyOnNew));
                     config.save();
                 }).bounds(x, y, buttonWidth, 20).build());
         rows.add(new Row(notifyButton, OptionIcons.notifyIcon(), () -> config.notifyOnNew));
         y += step;
 
         AbstractWidget singleplayerButton = this.addRenderableWidget(Button.builder(
-                stateLabel("仅单人世界", config.singleplayerOnly), button -> {
+                stateLabel(Component.translatable("option.treasurehunter.singleplayer"), config.singleplayerOnly),
+                button -> {
                     config.singleplayerOnly = !config.singleplayerOnly;
-                    button.setMessage(stateLabel("仅单人世界", config.singleplayerOnly));
+                    button.setMessage(stateLabel(Component.translatable("option.treasurehunter.singleplayer"),
+                            config.singleplayerOnly));
                     config.save();
                 }).bounds(x, y, buttonWidth, 20).build());
         rows.add(new Row(singleplayerButton, OptionIcons.singleplayerIcon(), () -> config.singleplayerOnly));
         y += step;
 
         AbstractWidget smartButton = this.addRenderableWidget(Button.builder(
-                stateLabel("来源智能识别", config.smartLabels), button -> {
+                stateLabel(Component.translatable("option.treasurehunter.smart"), config.smartLabels), button -> {
                     config.smartLabels = !config.smartLabels;
-                    button.setMessage(stateLabel("来源智能识别", config.smartLabels));
+                    button.setMessage(stateLabel(Component.translatable("option.treasurehunter.smart"),
+                            config.smartLabels));
                     config.save();
                 }).bounds(x, y, buttonWidth, 20).build());
         rows.add(new Row(smartButton, OptionIcons.smartIcon(), () -> config.smartLabels));
         y += step;
 
         AbstractWidget mergeButton = this.addRenderableWidget(Button.builder(
-                stateLabel("邻近标记合并", config.mergeNearbyMarkers), button -> {
+                stateLabel(Component.translatable("option.treasurehunter.merge"), config.mergeNearbyMarkers), button -> {
                     config.mergeNearbyMarkers = !config.mergeNearbyMarkers;
-                    button.setMessage(stateLabel("邻近标记合并", config.mergeNearbyMarkers));
+                    button.setMessage(stateLabel(Component.translatable("option.treasurehunter.merge"),
+                            config.mergeNearbyMarkers));
                     config.save();
                 }).bounds(x, y, buttonWidth, 20).build());
         rows.add(new Row(mergeButton, OptionIcons.mergeIcon(), () -> config.mergeNearbyMarkers));
         y += step;
 
         AbstractWidget filterButton = this.addRenderableWidget(Button
-                .builder(Component.literal("箱子类型过滤…"),
+                .builder(Component.translatable("option.treasurehunter.filter"),
                         button -> this.minecraft.setScreenAndShow(new ChestFilterScreen(this, config)))
                 .bounds(x, y, buttonWidth, 20).build());
         rows.add(new Row(filterButton, OptionIcons.filterIcon(), null));
         y += step + 10;
 
-        this.addRenderableWidget(Button.builder(Component.literal("完成"), button -> this.onClose())
+        this.addRenderableWidget(Button.builder(Component.translatable("button.treasurehunter.done"), button -> this.onClose())
                 .bounds(x, y, buttonWidth, 20).build());
     }
 
@@ -113,8 +118,9 @@ public class TreasureHunterConfigScreen extends Screen {
     }
 
     /** 统一的"✔ 名称：开 / ✘ 名称：关"标签。 */
-    private static Component stateLabel(String name, boolean enabled) {
-        return Component.literal((enabled ? "✔ " : "✘ ") + name + "：" + (enabled ? "开" : "关"));
+    private static Component stateLabel(Component name, boolean enabled) {
+        return Component.translatable(enabled ? "screen.treasurehunter.state_on" : "screen.treasurehunter.state_off",
+                name);
     }
 
     @Override
@@ -130,7 +136,7 @@ public class TreasureHunterConfigScreen extends Screen {
             }
         }
         graphics.centeredText(this.font, this.title, this.width / 2, 18, 0xFFFFFFFF);
-        graphics.centeredText(this.font, Component.literal("点击切换（立即保存）｜✔ 开 ✘ 关"),
+        graphics.centeredText(this.font, Component.translatable("screen.treasurehunter.config.hint"),
                 this.width / 2, 31, 0xFFA0A0A0);
     }
 

@@ -1,41 +1,53 @@
 package com.treasurehunter.scan;
 
+import net.minecraft.network.chat.Component;
+
 /**
- * 容器（箱子 / 木桶）的来源分类：用于路径点标签、颜色、简称与"逐类扫描开关"。
+ * 容器（箱子 / 木桶 / 运输矿车）的来源分类：用于路径点标签、颜色、简称与"逐类扫描开关"。
+ *
+ * <p>
+ * 显示名走语言文件（zh_cn / en_us 双语），中文命名与 Minecraft Wiki 的结构名对齐
+ * （如 埋藏的宝藏 / 刷怪房 / 废弃矿井 / 堡垒遗迹 / 下界要塞 / 废弃传送门）。
  */
 public enum ChestCategory {
-    TREASURE("宝藏箱", "宝", "GOLD"),
-    TRIAL("试炼箱", "试", "AQUA"),
-    MINESHAFT("矿井箱", "矿", "DARK_GRAY"),
-    DUNGEON("地牢箱", "牢", "DARK_GREEN"),
-    BASTION("猪灵箱", "猪", "PINK"),
-    FORTRESS("堡垒箱", "堡", "DARK_RED"),
-    END_CITY("末地城箱", "末", "PURPLE"),
-    ANCIENT_CITY("远古城市箱", "古", "DARK_AQUA"),
-    VILLAGE("村庄箱", "村", "GREEN"),
-    DESERT("沙漠神殿箱", "沙", "YELLOW"),
-    JUNGLE("丛林神庙箱", "林", "LIME"),
-    STRONGHOLD("要塞箱", "要", "LIGHT_BLUE"),
-    OUTPOST("前哨站箱", "哨", "BROWN"),
-    MANSION("府邸箱", "邸", "DARK_PURPLE"),
-    SHIPWRECK("沉船箱", "船", "DARK_BLUE"),
-    IGLOO("雪屋箱", "雪", "WHITE"),
-    OCEAN_RUINS("海底废墟箱", "海", "BLUE"),
-    RUINED_PORTAL("传送门遗迹箱", "门", "MAGENTA"),
-    OTHER("其他箱", "箱", "GRAY");
+    TREASURE("treasure", "宝", "GOLD"),
+    TRIAL("trial", "试", "AQUA"),
+    MINESHAFT("mineshaft", "矿", "DARK_GRAY"),
+    DUNGEON("dungeon", "怪", "DARK_GREEN"),
+    BASTION("bastion", "堡", "PINK"),
+    FORTRESS("fortress", "界", "DARK_RED"),
+    END_CITY("end_city", "末", "PURPLE"),
+    ANCIENT_CITY("ancient_city", "古", "DARK_AQUA"),
+    VILLAGE("village", "村", "GREEN"),
+    DESERT("desert", "沙", "YELLOW"),
+    JUNGLE("jungle", "林", "LIME"),
+    STRONGHOLD("stronghold", "要", "LIGHT_BLUE"),
+    OUTPOST("outpost", "哨", "BROWN"),
+    MANSION("mansion", "邸", "DARK_PURPLE"),
+    SHIPWRECK("shipwreck", "船", "DARK_BLUE"),
+    IGLOO("igloo", "雪", "WHITE"),
+    OCEAN_RUINS("ocean_ruins", "海", "BLUE"),
+    RUINED_PORTAL("ruined_portal", "门", "MAGENTA"),
+    OTHER("other", "箱", "GRAY");
 
-    private final String displayName;
+    private final String id;
     private final String initial;
     private final String colorEnumName;
 
-    ChestCategory(String displayName, String initial, String colorEnumName) {
-        this.displayName = displayName;
+    ChestCategory(String id, String initial, String colorEnumName) {
+        this.id = id;
         this.initial = initial;
         this.colorEnumName = colorEnumName;
     }
 
-    public String displayName() {
-        return displayName;
+    /** 语言键（zh_cn / en_us 两套翻译）。 */
+    public String translationKey() {
+        return "category.treasurehunter." + id;
+    }
+
+    /** 本地化的分类名（如「废弃矿井箱」/"Mineshaft Chest"）。 */
+    public Component label() {
+        return Component.translatable(translationKey());
     }
 
     /** 地图上显示的单个代表汉字。 */

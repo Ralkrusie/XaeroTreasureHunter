@@ -7,6 +7,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.vehicle.minecart.MinecartChest;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.LidBlockEntity;
@@ -59,7 +61,7 @@ public final class MarkerScanner {
 
     /** 已登记的标记（key 为 {@link BlockPos#asLong()}）。 */
     public record Marker(long key, TargetType type, BlockPos pos, String name, ChestCategory category,
-            Object waypoint) {
+            Object waypoint, int entityId) {
     }
 
     public boolean toggle() {
@@ -124,6 +126,7 @@ public final class MarkerScanner {
         tickCounter++;
         if (tickCounter % Math.max(1, config.sweepIntervalTicks) == 0) {
             sweepLoadedArea(client);
+            scanMinecarts(level);
         }
         processQueue(level);
         if (tickCounter % 10 == 0) {
@@ -209,7 +212,7 @@ public final class MarkerScanner {
                 if (marker.pos().distSqr(playerPos) > limit) {
                     continue;
                 }
-                if (marker.type() == TargetType.BARREL
+                if (marker.type() == TargetType.BARREL || marker.entityId() != 0
                         || (level.getBlockEntity(marker.pos()) instanceof LidBlockEntity lid
                                 && lid.getOpenNess(0.0F) > 0.05F)) {
                     openedContainers.add(marker.key());
@@ -226,7 +229,8 @@ public final class MarkerScanner {
                     XaeroBridge.remove(marker.waypoint());
                 }
                 if (config.notifyOnNew && client.player != null) {
-                    client.player.sendOverlayMessage(Component.literal("Xaero TreasureHunter: 已搜刮 " + marker.name()));
+                    client.player.sendOverlayMessage(Component.literal("Xaero TreasureHunter: ")
+                            .append(Component.translatable("message.treasurehunter.scavenged", marker.name())));
                 }
             }
             openedContainers.clear();
@@ -320,7 +324,7 @@ public final class MarkerScanner {
         }
 
         ChestCategory category = null;
-        String label = type.displayName();
+        Component label = type.label();
         if (config.smartLabels) {
             if (type == TargetType.CHEST || type == TargetType.BARREL) {
                 // 证据区域必须已完整加载：区块边缘/传送瞬载时先把本区块标记为"未扫"，
@@ -331,7 +335,7 @@ public final class MarkerScanner {
                 }
                 category = StructureGuesser.guessContainerCategory(level, pos);
                 if (category != ChestCategory.OTHER) {
-                    label = category.displayName();
+                    label = category.label();
                 }
                 if (config.isChestCategoryDisabled(category)) {
                     return; // 该类被关闭：不扫描
@@ -346,19 +350,65 @@ public final class MarkerScanner {
             return;
         }
 
-        String name = "[" + label + "] " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
+        String name = "[" + label.getString() + "] " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
         Object waypoint = null;
         if (config.waypointsEnabled) {
             waypoint = XaeroBridge.emit(name, initialsFor(type, category), pos.getX(), pos.getY(), pos.getZ(),
                     colorFor(type, category), true);
         }
-        markers.put(key, new Marker(key, type, pos.immutable(), name, category, waypoint));
+        markers.put(key, new Marker(key, type, pos.immutable(), name, category, waypoint, 0));
 
         Minecraft client = Minecraft.getInstance();
         if (config.notifyOnNew && client.player != null && notifyCooldown <= 0) {
             notifyCooldown = 20;
-            client.player.sendSystemMessage(Component.literal(
-                    "Xaero TreasureHunter: 发现" + label + " @ " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()));
+            client.player.sendSystemMessage(Component.literal("Xaero TreasureHunter: ")
+                    .append(Component.translatable("message.treasurehunter.found",
+                            label, pos.getX(), pos.getY(), pos.getZ())));
+        }
+    }
+
+    /** 运输矿车箱扫描：原版废弃矿井的战利品全部在矿车（实体）里，没有普通箱方块。 */
+    private void scanMinecarts(ClientLevel level) {
+        if (!config.isEnabled(TargetType.CHEST) || config.isChestCategoryDisabled(ChestCategory.MINESHAFT)) {
+            return;
+        }
+        for (Entity entity : level.entitiesForRendering()) {
+            if (entity instanceof MinecartChest cart) {
+                registerMinecart(level, cart);
+            }
+        }
+    }
+
+    private void registerMinecart(ClientLevel level, MinecartChest cart) {
+        int entityId = cart.getId();
+        long key = cart.blockPosition().asLong();
+        if (markers.size() >= config.maxMarkers || isScavenged(level, key)) {
+            return;
+        }
+        for (Marker marker : markers.values()) {
+            if (marker.entityId() == entityId) {
+                return; // 同一辆矿车只登记一次：矿车移动后位置键会变，靠实体 id 去重
+            }
+        }
+        BlockPos pos = cart.blockPosition().immutable();
+        if (config.mergeNearbyMarkers && hasSameMarkerNearby(TargetType.CHEST, ChestCategory.MINESHAFT, pos)) {
+            return;
+        }
+        Component label = ChestCategory.MINESHAFT.label();
+        String name = "[" + label.getString() + "] " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
+        Object waypoint = null;
+        if (config.waypointsEnabled) {
+            waypoint = XaeroBridge.emit(name, ChestCategory.MINESHAFT.initial(), pos.getX(), pos.getY(), pos.getZ(),
+                    ChestCategory.MINESHAFT.colorEnumName(), true);
+        }
+        markers.put(key, new Marker(key, TargetType.CHEST, pos, name, ChestCategory.MINESHAFT, waypoint, entityId));
+
+        Minecraft client = Minecraft.getInstance();
+        if (config.notifyOnNew && client.player != null && notifyCooldown <= 0) {
+            notifyCooldown = 20;
+            client.player.sendSystemMessage(Component.literal("Xaero TreasureHunter: ")
+                    .append(Component.translatable("message.treasurehunter.found",
+                            label, pos.getX(), pos.getY(), pos.getZ())));
         }
     }
 
@@ -376,8 +426,10 @@ public final class MarkerScanner {
             if (marker.pos().distSqr(center) > (double) VALIDATE_RANGE * VALIDATE_RANGE) {
                 continue;
             }
-            TargetType now = TargetType.match(level.getBlockState(marker.pos()));
-            if (now != marker.type()) {
+            boolean stillThere = marker.entityId() != 0
+                    ? level.getEntity(marker.entityId()) instanceof MinecartChest
+                    : TargetType.match(level.getBlockState(marker.pos())) == marker.type();
+            if (!stillThere) {
                 if (marker.waypoint() != null) {
                     XaeroBridge.remove(marker.waypoint());
                 }
@@ -391,7 +443,7 @@ public final class MarkerScanner {
                 if (waypoint != null) {
                     iterator.remove();
                     markers.put(marker.key(), new Marker(marker.key(), marker.type(), marker.pos(),
-                            marker.name(), marker.category(), waypoint));
+                            marker.name(), marker.category(), waypoint, marker.entityId()));
                     // 重新插入后迭代继续即可，无需特殊处理。
                     break;
                 }

@@ -78,16 +78,17 @@ public class TreasureHunterMod implements ClientModInitializer {
             while (toggleKey.consumeClick()) {
                 boolean enabled = scanner.toggle();
                 if (client.player != null) {
-                    client.player.sendOverlayMessage(
-                            Component.literal("Xaero TreasureHunter: 扫描已" + (enabled ? "开启" : "关闭")));
+                    client.player.sendOverlayMessage(Component.literal("Xaero TreasureHunter: ")
+                            .append(Component.translatable(enabled
+                                    ? "message.treasurehunter.toggle_on" : "message.treasurehunter.toggle_off")));
                 }
             }
             while (clearKey.consumeClick()) {
                 int removed = scanner.clearMarkers();
                 scanner.disable();
                 if (client.player != null) {
-                    client.player.sendOverlayMessage(
-                            Component.literal("Xaero TreasureHunter: 已清除 " + removed + " 个标记，扫描已关闭（G 重新开启）"));
+                    client.player.sendOverlayMessage(Component.literal("Xaero TreasureHunter: ")
+                            .append(Component.translatable("message.treasurehunter.cleared", removed)));
                 }
             }
             while (settingsKey.consumeClick()) {

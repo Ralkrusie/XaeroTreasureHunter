@@ -31,7 +31,7 @@ public class ChestFilterScreen extends Screen {
     }
 
     public ChestFilterScreen(Screen parent, TreasureHunterConfig config) {
-        super(Component.literal("箱子类型过滤"));
+        super(Component.translatable("screen.treasurehunter.filter.title"));
         this.parent = parent;
         this.config = config;
     }
@@ -67,11 +67,11 @@ public class ChestFilterScreen extends Screen {
 
         int footerY = startY + rows * (buttonHeight + spacingY) + 8;
         int footerWidth = (gridWidth - spacingX * 2) / 3;
-        this.addRenderableWidget(Button.builder(Component.literal("全开"), button -> {
+        this.addRenderableWidget(Button.builder(Component.translatable("button.treasurehunter.all_on"), button -> {
             config.setAllChestCategoriesEnabled(true);
             this.minecraft.setScreenAndShow(new ChestFilterScreen(this.parent, this.config));
         }).bounds(startX, footerY, footerWidth, 20).build());
-        this.addRenderableWidget(Button.builder(Component.literal("全关"), button -> {
+        this.addRenderableWidget(Button.builder(Component.translatable("button.treasurehunter.all_off"), button -> {
             config.setAllChestCategoriesEnabled(false);
             if (TreasureHunterMod.scanner() != null) {
                 for (ChestCategory category : ChestCategory.values()) {
@@ -80,13 +80,13 @@ public class ChestFilterScreen extends Screen {
             }
             this.minecraft.setScreenAndShow(new ChestFilterScreen(this.parent, this.config));
         }).bounds(startX + footerWidth + spacingX, footerY, footerWidth, 20).build());
-        this.addRenderableWidget(Button.builder(Component.literal("返回"), button -> this.onClose())
+        this.addRenderableWidget(Button.builder(Component.translatable("button.treasurehunter.back"), button -> this.onClose())
                 .bounds(startX + 2 * (footerWidth + spacingX), footerY, footerWidth, 20).build());
     }
 
     private Component categoryLabel(ChestCategory category) {
         boolean enabled = !config.isChestCategoryDisabled(category);
-        return Component.literal((enabled ? "✔ " : "✘ ") + category.displayName());
+        return Component.literal(enabled ? "✔ " : "✘ ").append(category.label());
     }
 
     @Override
@@ -100,7 +100,7 @@ public class ChestFilterScreen extends Screen {
             graphics.fill(x, y, x + 6, y + 6, enabled ? 0xFF55FF55 : 0xFFFF5555);
         }
         graphics.centeredText(this.font, this.title, this.width / 2, 18, 0xFFFFFFFF);
-        graphics.centeredText(this.font, Component.literal("✔=开 ✘=关；点击切换，关闭后该类不再扫描（已标记的会移除）"),
+        graphics.centeredText(this.font, Component.translatable("screen.treasurehunter.filter.hint"),
                 this.width / 2, 29, 0xFFA0A0A0);
     }
 
