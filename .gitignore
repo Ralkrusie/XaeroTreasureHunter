@@ -1,0 +1,35 @@
+# gradle
+build/
+.gradle/
+out/
+
+# idea
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# vscode
+.settings/
+.vscode/
+bin/
+.classpath
+.project
+
+# macos
+*.DS_Store
+
+# java
+hs_err_*.log
+replay_*.log
+*.hprof
+*.jfr
+
+# run
+run/
+
+# scratch (downloaded reference jars etc.)
+scratch/
+
+# local toolchain (Gradle distribution, etc.)
+tools/

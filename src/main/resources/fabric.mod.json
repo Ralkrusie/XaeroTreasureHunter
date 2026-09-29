@@ -1,0 +1,27 @@
+{
+    "schemaVersion": 1,
+    "id": "treasurehunter",
+    "version": "${version}",
+    "name": "Xaero TreasureHunter",
+    "description": "自动 Pie-Ray 扫描宝箱、刷怪笼与钟，分类标注为 Xaero 小地图 / 世界地图路径点。",
+    "authors": [
+        "Ralkrusie"
+    ],
+    "license": "MIT",
+    "environment": "client",
+    "entrypoints": {
+        "client": [
+            "com.treasurehunter.TreasureHunterMod"
+        ]
+    },
+    "depends": {
+        "fabricloader": ">=0.19.5",
+        "minecraft": "~26.2",
+        "java": ">=25",
+        "fabric-api": "*"
+    },
+    "recommends": {
+        "xaerominimap": "*",
+        "xaeroworldmap": "*"
+    }
+}
