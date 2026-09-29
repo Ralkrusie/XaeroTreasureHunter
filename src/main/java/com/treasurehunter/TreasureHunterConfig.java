@@ -63,6 +63,9 @@ public final class TreasureHunterConfig {
     public boolean chest = true;
     public boolean barrel = true;
     public boolean bell = true;
+    /** 宝库 / 不祥宝库（试炼密室；26.x 为同一方块，不祥为状态属性）。 */
+    public boolean vault = true;
+    public boolean ominousVault = true;
 
     private transient Path path;
 
@@ -103,6 +106,8 @@ public final class TreasureHunterConfig {
             case CHEST -> chest;
             case BARREL -> barrel;
             case BELL -> bell;
+            case VAULT -> vault;
+            case OMINOUS_VAULT -> ominousVault;
         };
     }
 

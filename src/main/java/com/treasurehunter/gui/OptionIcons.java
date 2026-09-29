@@ -13,6 +13,8 @@ public final class OptionIcons {
     private static final ItemStack TARGET_CHEST = new ItemStack(Items.CHEST);
     private static final ItemStack TARGET_BARREL = new ItemStack(Items.BARREL);
     private static final ItemStack TARGET_BELL = new ItemStack(Items.BELL);
+    private static final ItemStack TARGET_VAULT = new ItemStack(Items.VAULT);
+    private static final ItemStack TARGET_OMINOUS_VAULT = new ItemStack(Items.OMINOUS_TRIAL_KEY);
 
     private static final ItemStack OPTION_NOTIFY = new ItemStack(Items.NAME_TAG);
     private static final ItemStack OPTION_SINGLEPLAYER = new ItemStack(Items.PLAYER_HEAD);
@@ -49,6 +51,8 @@ public final class OptionIcons {
             case CHEST -> TARGET_CHEST;
             case BARREL -> TARGET_BARREL;
             case BELL -> TARGET_BELL;
+            case VAULT -> TARGET_VAULT;
+            case OMINOUS_VAULT -> TARGET_OMINOUS_VAULT;
         };
     }
 

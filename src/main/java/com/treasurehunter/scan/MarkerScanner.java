@@ -11,7 +11,9 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.vehicle.minecart.MinecartChest;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.VaultBlock;
 import net.minecraft.world.level.block.entity.LidBlockEntity;
+import net.minecraft.world.level.block.entity.vault.VaultState;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
@@ -133,6 +135,7 @@ public final class MarkerScanner {
             validateNearby(client, level, client.player.blockPosition());
         }
         trackOpenedContainers(client, level);
+        trackOpenedVaults(client, level);
     }
 
     /**
@@ -234,6 +237,46 @@ public final class MarkerScanner {
                 }
             }
             openedContainers.clear();
+        }
+    }
+
+    /**
+     * 宝库检测：玩家解锁宝库后，自动移除标记与路径点。
+     *
+     * <p>
+     * 宝库的开启进度走方块状态（{@link VaultBlock#STATE}，客户端同步）：静默期为
+     * INACTIVE（持钥匙玩家靠近时短暂 ACTIVE），一旦进入 UNLOCKING/EJECTING
+     * 就说明玩家已开启，按"已搜刮"处理（重扫不再登记）。
+     */
+    private void trackOpenedVaults(Minecraft client, ClientLevel level) {
+        if (client.player == null || markers.isEmpty()) {
+            return;
+        }
+        BlockPos playerPos = client.player.blockPosition();
+        Iterator<Map.Entry<Long, Marker>> iterator = markers.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Marker marker = iterator.next().getValue();
+            if ((marker.type() != TargetType.VAULT && marker.type() != TargetType.OMINOUS_VAULT)
+                    || marker.pos().distSqr(playerPos) > 64.0) {
+                continue;
+            }
+            BlockState state = level.getBlockState(marker.pos());
+            if (!(state.getBlock() instanceof VaultBlock)) {
+                continue; // 方块已消失：交给 validateNearby 处理
+            }
+            VaultState vaultState = state.getValue(VaultBlock.STATE);
+            if (vaultState == VaultState.INACTIVE || vaultState == VaultState.ACTIVE) {
+                continue; // 尚未开启
+            }
+            if (marker.waypoint() != null) {
+                XaeroBridge.remove(marker.waypoint());
+            }
+            iterator.remove();
+            scavenged.computeIfAbsent(level.dimension(), k -> new HashSet<>()).add(marker.key());
+            if (config.notifyOnNew) {
+                client.player.sendOverlayMessage(Component.literal("Xaero TreasureHunter: ")
+                        .append(Component.translatable("message.treasurehunter.vault_opened", marker.name())));
+            }
         }
     }
 

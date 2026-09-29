@@ -2,16 +2,23 @@ package com.treasurehunter;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.VaultBlock;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * 可标记的目标方块类型（名称走语言文件，中英双语）。
+ * 可标记的目标方块类型（名称与简称走语言文件，中英双语）。
+ *
+ * <p>
+ * 26.x 的宝库与不祥宝库是同一方块（{@code minecraft:vault}），
+ * 由方块状态属性 {@link VaultBlock#OMINOUS} 区分。
  */
 public enum TargetType {
     SPAWNER("spawner", "RED"),
     CHEST("chest", "GOLD"),
     BARREL("barrel", "BROWN"),
-    BELL("bell", "AQUA");
+    BELL("bell", "AQUA"),
+    VAULT("vault", "YELLOW"),
+    OMINOUS_VAULT("ominous_vault", "DARK_RED");
 
     private final String id;
     private final String colorEnumName;
@@ -54,6 +61,10 @@ public enum TargetType {
         }
         if (state.is(Blocks.BELL)) {
             return BELL;
+        }
+        if (state.is(Blocks.VAULT)) {
+            // 26.x：宝库与不祥宝库是同一方块，不祥由方块状态属性 OMINOUS 区分
+            return state.getValue(VaultBlock.OMINOUS) ? OMINOUS_VAULT : VAULT;
         }
         return null;
     }

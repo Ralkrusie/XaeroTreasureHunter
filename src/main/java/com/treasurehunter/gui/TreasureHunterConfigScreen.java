@@ -2,7 +2,6 @@ package com.treasurehunter.gui;
 
 import com.treasurehunter.TargetType;
 import com.treasurehunter.TreasureHunterConfig;
-import com.treasurehunter.TreasureHunterMod;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
@@ -15,11 +14,16 @@ import java.util.List;
 import java.util.function.BooleanSupplier;
 
 /**
- * TreasureHunter 游戏内设置菜单：勾选要扫描的方块类型等。
+ * TreasureHunter 设置主界面（选项树第一层）。
  *
  * <p>
- * 快捷键 J 打开；所有改动立即写入 config/treasurehunter.json。
- * 关闭某类型时会同时移除该类已生成的标记与路径点。
+ * 快捷键 J 打开。结构：
+ * <ul>
+ * <li>「扫描目标…」子页：刷怪笼 / 箱子 / 木桶 / 钟 / 宝库 / 不祥宝库</li>
+ * <li>「箱子类型过滤…」子页：智能识别的逐类开关</li>
+ * <li>主界面直接切换：来源智能识别 / 发现提示 / 仅单人世界 / 邻近标记合并</li>
+ * </ul>
+ * 所有改动立即写入 config/treasurehunter.json。
  */
 public class TreasureHunterConfigScreen extends Screen {
     private final TreasureHunterConfig config;
@@ -42,15 +46,30 @@ public class TreasureHunterConfigScreen extends Screen {
         int y = 46;
         int step = 24;
 
-        for (TargetType type : TargetType.values()) {
-            AbstractWidget widget = this.addRenderableWidget(Button.builder(
-                    stateLabel(type.label(), config.isEnabled(type)), button -> {
-                        setTarget(type, !config.isEnabled(type));
-                        button.setMessage(stateLabel(type.label(), config.isEnabled(type)));
-                    }).bounds(x, y, buttonWidth, 20).build());
-            rows.add(new Row(widget, OptionIcons.targetIcon(type), () -> config.isEnabled(type)));
-            y += step;
-        }
+        // 选项树第一层：「扫描目标…」进入子页（刷怪笼/箱子/木桶/钟/宝库/不祥宝库）
+        AbstractWidget targetsButton = this.addRenderableWidget(Button
+                .builder(Component.translatable("button.treasurehunter.targets"),
+                        button -> this.minecraft.setScreenAndShow(new TargetScanScreen(this, config)))
+                .bounds(x, y, buttonWidth, 20).build());
+        rows.add(new Row(targetsButton, OptionIcons.targetIcon(TargetType.CHEST), null));
+        y += step;
+
+        AbstractWidget smartButton = this.addRenderableWidget(Button.builder(
+                stateLabel(Component.translatable("option.treasurehunter.smart"), config.smartLabels), button -> {
+                    config.smartLabels = !config.smartLabels;
+                    button.setMessage(stateLabel(Component.translatable("option.treasurehunter.smart"),
+                            config.smartLabels));
+                    config.save();
+                }).bounds(x, y, buttonWidth, 20).build());
+        rows.add(new Row(smartButton, OptionIcons.smartIcon(), () -> config.smartLabels));
+        y += step;
+
+        AbstractWidget filterButton = this.addRenderableWidget(Button
+                .builder(Component.translatable("option.treasurehunter.filter"),
+                        button -> this.minecraft.setScreenAndShow(new ChestFilterScreen(this, config)))
+                .bounds(x, y, buttonWidth, 20).build());
+        rows.add(new Row(filterButton, OptionIcons.filterIcon(), null));
+        y += step;
 
         AbstractWidget notifyButton = this.addRenderableWidget(Button.builder(
                 stateLabel(Component.translatable("option.treasurehunter.notify"), config.notifyOnNew), button -> {
@@ -73,16 +92,6 @@ public class TreasureHunterConfigScreen extends Screen {
         rows.add(new Row(singleplayerButton, OptionIcons.singleplayerIcon(), () -> config.singleplayerOnly));
         y += step;
 
-        AbstractWidget smartButton = this.addRenderableWidget(Button.builder(
-                stateLabel(Component.translatable("option.treasurehunter.smart"), config.smartLabels), button -> {
-                    config.smartLabels = !config.smartLabels;
-                    button.setMessage(stateLabel(Component.translatable("option.treasurehunter.smart"),
-                            config.smartLabels));
-                    config.save();
-                }).bounds(x, y, buttonWidth, 20).build());
-        rows.add(new Row(smartButton, OptionIcons.smartIcon(), () -> config.smartLabels));
-        y += step;
-
         AbstractWidget mergeButton = this.addRenderableWidget(Button.builder(
                 stateLabel(Component.translatable("option.treasurehunter.merge"), config.mergeNearbyMarkers),
                 button -> {
@@ -92,31 +101,11 @@ public class TreasureHunterConfigScreen extends Screen {
                     config.save();
                 }).bounds(x, y, buttonWidth, 20).build());
         rows.add(new Row(mergeButton, OptionIcons.mergeIcon(), () -> config.mergeNearbyMarkers));
-        y += step;
-
-        AbstractWidget filterButton = this.addRenderableWidget(Button
-                .builder(Component.translatable("option.treasurehunter.filter"),
-                        button -> this.minecraft.setScreenAndShow(new ChestFilterScreen(this, config)))
-                .bounds(x, y, buttonWidth, 20).build());
-        rows.add(new Row(filterButton, OptionIcons.filterIcon(), null));
         y += step + 10;
 
         this.addRenderableWidget(
                 Button.builder(Component.translatable("button.treasurehunter.done"), button -> this.onClose())
                         .bounds(x, y, buttonWidth, 20).build());
-    }
-
-    private void setTarget(TargetType type, boolean enabled) {
-        switch (type) {
-            case SPAWNER -> config.spawner = enabled;
-            case CHEST -> config.chest = enabled;
-            case BARREL -> config.barrel = enabled;
-            case BELL -> config.bell = enabled;
-        }
-        config.save();
-        if (!enabled && TreasureHunterMod.scanner() != null) {
-            TreasureHunterMod.scanner().removeMarkersOfType(type);
-        }
     }
 
     /** 统一的"✔ 名称：开 / ✘ 名称：关"标签。 */
