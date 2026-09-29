@@ -17,8 +17,8 @@ public enum TargetType {
     CHEST("chest", "GOLD"),
     BARREL("barrel", "BROWN"),
     BELL("bell", "AQUA"),
-    VAULT("vault", "YELLOW"),
-    OMINOUS_VAULT("ominous_vault", "DARK_RED");
+    VAULT("vault", "GOLD"), // 特征色=橙色（Xaero 调色板无 ORANGE，取最接近的 GOLD）
+    OMINOUS_VAULT("ominous_vault", "LIGHT_BLUE"); // 特征色=淡蓝色
 
     private final String id;
     private final String colorEnumName;

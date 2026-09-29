@@ -28,9 +28,9 @@ public final class TreasureHunterConfig {
     public boolean notifyOnNew = true;
     /** 是否把标记登记为 Xaero 路径点。 */
     public boolean waypointsEnabled = true;
-    /** 来源智能识别：容器按周边特征标注来源（地牢箱/村庄箱…），刷怪笼标注生物种类。 */
+    /** 结构智能识别：容器按周边特征标注来源（刷怪房箱/村庄箱…），刷怪笼标注生物种类。 */
     public boolean smartLabels = true;
-    /** 邻近标记合并：半径 5 格内已有同类型同分类标记时不再重复标记；关闭则每个匹配都标记。 */
+    /** 邻近路径点合并：半径 5 格内已有同类型同分类标记时不再重复标记；关闭则每个匹配都标记。 */
     public boolean mergeNearbyMarkers = true;
     /** 智能识别中被关闭扫描的容器分类（存 ChestCategory 名称）。 */
     public List<String> disabledChestCategories = new ArrayList<>();

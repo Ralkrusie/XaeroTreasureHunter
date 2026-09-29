@@ -71,7 +71,7 @@
     "option.treasurehunter.notify": "Chat notifications",
     "option.treasurehunter.singleplayer": "Singleplayer only",
     "option.treasurehunter.smart": "Smart structure labels",
-    "option.treasurehunter.merge": "Merge nearby markers",
+    "option.treasurehunter.merge": "Merge nearby waypoints",
     "option.treasurehunter.filter": "Chest type filter…",
     "button.treasurehunter.done": "Done",
     "button.treasurehunter.all_on": "Enable all",

@@ -21,7 +21,7 @@ import java.util.function.BooleanSupplier;
  * <ul>
  * <li>「扫描目标…」子页：刷怪笼 / 箱子 / 木桶 / 钟 / 宝库 / 不祥宝库</li>
  * <li>「箱子类型过滤…」子页：智能识别的逐类开关</li>
- * <li>主界面直接切换：来源智能识别 / 发现提示 / 仅单人世界 / 邻近标记合并</li>
+ * <li>主界面直接切换：结构智能识别 / 发现提示 / 仅单人世界 / 邻近路径点合并</li>
  * </ul>
  * 所有改动立即写入 config/treasurehunter.json。
  */

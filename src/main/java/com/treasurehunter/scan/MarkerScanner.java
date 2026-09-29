@@ -388,7 +388,7 @@ public final class MarkerScanner {
             }
         }
 
-        // 邻近标记合并（可在设置里关闭）：半径 5 格内已有相同标记（同类型同分类）时不再重复标记
+        // 邻近路径点合并（可在设置里关闭）：半径 5 格内已有相同标记（同类型同分类）时不再重复标记
         if (config.mergeNearbyMarkers && hasSameMarkerNearby(type, category, pos)) {
             return;
         }
