@@ -59,6 +59,10 @@ Gradle 的 `GRADLE_USER_HOME` 默认是 `C:\Users\<用户>\.gradle`（本机约 
 7. **验证产物**：解包 `build\libs\*.jar` 直接看 `fabric.mod.json` 的 `version` 与 `minecraft` 约束。
 8. **进游戏实测通过后**才打 tag。
 
+实测前预检三点：实例 `mods\` 里**只有一份** treasurehunter jar（否则旧版可能先被加载）；
+`fabric-api` 与 loader 版本满足 `fabric.mod.json` 的 `depends`；
+实例 `options.txt` 里没有上一版本残留的 `key.treasurehunter.*`（旧键位值是 GLFW keysym，与 26.3 的 scancode 空间不通用）。
+
 首次构建新 MC 版本会联网下载约 155 MB 的 MC jar，缓存在 `~\.gradle\caches\fabric-loom\minecraftMaven\`。
 
 ### 版本升级时的结构数据复核
@@ -86,6 +90,9 @@ Gradle 的 `GRADLE_USER_HOME` 默认是 `C:\Users\<用户>\.gradle`（本机约 
 
 - `InputConstants.Type.KEYSYM` → `InputConstants.Type.KEYBOARD`（`SCANCODE` 也移除了）
 - `GLFW.GLFW_KEY_X` → `InputConstants.KEY_X`（用 MC 自己的常量，不要依赖 LWJGL 的 `SDLKeycode`）
+- ⚠️ `InputConstants.KEY_*` 是 **SDL scancode**（`KEY_G`=10 / `KEY_H`=11 / `KEY_J`=13），
+  **不是**旧的 GLFW keysym（71 / 72 / 74）。`Type.KEYBOARD` 内部就是按这套值查表的，两者必须配套使用；
+  看到 `KEY_G = 10` 不要以为是错的。
 
 ### 升级 Xaero 依赖时必须复核反射面
 
