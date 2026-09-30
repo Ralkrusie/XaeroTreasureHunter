@@ -216,7 +216,7 @@ gui\*                                        → 两级选项树设置界面
   ```
   中文给单字（宝/试/矿/怪/堡/要/末/古/村/沙/林/哨/邸/船/雪/海/门/库），英文给双字母（BT/TC/MS/MR/BA/NF/EC/AC/VL/DP/JT/SH/PO/WM/SW/IG/OR/RP/OT）。中文有意重复：要塞与下界要塞同为「要」，宝库与不祥宝库同为「库」（英文不重复）。
 - key 命名空间：`target.` / `category.` / `initial.` / `key.` / `key.category.` / `message.` / `option.` / `button.` / `screen.`，统一 `treasurehunter` 命名空间。
-- **`en_us.json` 与 `zh_cn.json` 必须逐 key 对应**（当前各 80 行），没有回退文件。新增任何东西都要同时改两个文件。
+- **`en_us.json` 与 `zh_cn.json` 必须逐 key 对应**（当前各 80 个 key / 82 行），没有回退文件。新增任何东西都要同时改两个文件。
 - 路径点名字在登记时就 `label.getString()` 拍平成 `String`，**切换语言不会立刻改写已有路径点**，要等重扫重新登记。
 - `README.md` 的分类简称列表是语言文件数据的副本，**加分类时要一起改**（0.14.1 的提交就是 README + 两个语言文件同时动）。
 
@@ -292,4 +292,4 @@ C:\Users\<用户>\.gradle\caches\fabric-loom\minecraftMaven\net\minecraft\minecr
 - **标记上限 400 无淘汰**：达到 `maxMarkers` 后直接拒绝新登记，直到 `H` 清空。
 - **性能**：`processQueue` 的 3 ms 预算只在区块之间检查，而 `scanChunk` 暴力遍历整个 16³；`sweepLoadedArea` 每 40 tick 把 `(2*(renderDistance+2)+1)²` 个位置入队并对 `scannedChunks` 全量 `removeIf`。
 - **未本地化的硬编码文本**：通知前缀；`fabric.mod.json` 的 `name` / `description`（仅中文，提到"自动 Pie-Ray 扫描"）/ `authors`。
-- **GUI 不一致**：`TreasureHunterConfigScreen.onClose()` 调 `setScreenAndShow(null)`，而另外两个界面会恢复 `parent`；`ChestFilterScreen` 的全开/全关是重建整个屏幕；"全关"会对包括 `OTHER` 在内的 19 个分类都调 `removeMarkersOfCategory`。
+- **GUI 不一致**：`TreasureHunterConfigScreen.onClose()` 调 `setScreenAndShow(null)`，而另外两个界面会恢复 `parent`；`ChestFilterScreen` 的全开/全关是重建整个屏幕；"全关"会对包括 `OTHER` 在内的 20 个分类都调 `removeMarkersOfCategory`（木桶不受其影响）。
