@@ -45,7 +45,7 @@ Gradle 的 `GRADLE_USER_HOME` 默认是 `C:\Users\<用户>\.gradle`（本机约 
 一次发版要改这几处，漏一处就会出现"jar 名对不上 README"：
 
 1. `gradle.properties` → `mod_version`
-2. `README.md` → 英文段与中文段的 `（0.15.0）` 标题
+2. `README.md` → 英文段与中文段的 `（0.16.0）` 标题
 3. `scratch\release-notes.md` → 安装步骤里的 jar 文件名（该文件不进版本控制）
 4. git tag `v<version>`
 
