@@ -46,6 +46,14 @@ Gradle 的 `GRADLE_USER_HOME` 默认是 `C:\Users\<用户>\.gradle`（本机约 
 
 `fabric.mod.json` 的 `version` 由 `processResources` 从 `project.version` 展开，不用手改。
 
+> ⚠️ Modrinth 上传用的 `scratch\release-body.json` 目前是**坏载荷**：把 `Get-Content` 的输出对象直接 `ConvertTo-Json`，
+> 于是 `body` 下面多出 `value` / `PSPath` / `PSParentPath` / `PSChildName` / `PSDrive` / `PSProvider` / `ReadCount`
+> 这些 PowerShell 元数据；而 API 要的是 `{"body": "<markdown 字符串>"}`。正确写法：
+>
+> ```powershell
+> @{ body = (Get-Content scratch\release-notes.md -Raw) } | ConvertTo-Json | Set-Content scratch\release-body.json -Encoding utf8
+> ```
+
 ### 升级 Minecraft 版本（26.2 → 26.3 的实际流程）
 
 1. **建分支**：`git checkout -b mc-XX`。迁移期主分支会编译不过，main 保持可发布。
@@ -76,7 +84,7 @@ Gradle 的 `GRADLE_USER_HOME` 默认是 `C:\Users\<用户>\.gradle`（本机约 
   且 `straw_bed` 不在 `minecraft:beds` 标签里 —— 所以村庄规则的两条分支都不会被误触发。
 - **群系标签不用查**：mod 不使用任何群系标签，全部是显式 `Biomes.X` 常量。
   所以 `is_forest` / `is_overworld` / `spawns_cold_variant_farm_animals` 这类标签的改动与判定无关。
-- **方块标签必须查**：判定依据之一是的 11 个 `BlockTags`（`BEDS` / `LOGS` / `PLANKS` / `RAILS` /
+- **方块标签必须查**：判定的依据之一是 11 个 `BlockTags`（`BEDS` / `LOGS` / `PLANKS` / `RAILS` /
   `TERRACOTTA` / `WOODEN_{DOORS,FENCES,SLABS,STAIRS,TRAPDOORS}` / `WOOL`）。
   26.3 新增了 `poplar` 木种（`poplar_planks` 及对应 `wooden_*`，并经 `logs_that_burn` → `poplar_logs` 进入 `LOGS`）——
   因为判定走标签，**新木种自动覆盖，不需要改代码**。
@@ -240,7 +248,7 @@ C:\Users\<用户>\.gradle\caches\fabric-loom\minecraftMaven\net\minecraft\minecr
 - **宝库与不祥宝库是同一个方块** `minecraft:vault`，用 `VaultBlock.OMINOUS` 区分；开启进度看 `VaultBlock.STATE` / `VaultState.{INACTIVE,ACTIVE,UNLOCKING,EJECTING}`。
 - **客户端方块实体 NBT 是空的**，开箱前读不到战利品——所以只能启发式分类。**刷怪笼是例外**：`SpawnerBlockEntity#getSpawner().getOrCreateDisplayEntity(...)` 能拿到真实同步实体，因此能显示「蜘蛛笼 / 烈焰人笼」。
 - **GUI API 变了**：屏幕重写 `extractRenderState(GuiGraphicsExtractor, int, int, float)` 并先调 `super`，用 `graphics.fakeItem(...)` / `centeredText(...)` / `fill(...)` 绘制；切屏用 `Minecraft#setScreenAndShow(...)`，不是 `setScreen`。
-- **输入 API**：`KeyMappingHelper.registerKeyMapping(...)`、`KeyMapping.Category.register(Identifier...)`、`InputConstants.Type.KEYSYM`；动作栏 `sendOverlayMessage`，聊天 `sendSystemMessage`。
+- **输入 API**：`KeyMappingHelper.registerKeyMapping(...)`、`KeyMapping.Category.register(Identifier...)`；动作栏 `sendOverlayMessage`，聊天 `sendSystemMessage`。（`Type.KEYSYM` 在 26.3 已改名 `KEYBOARD`，见下）
 - **26.x 的 MC 已反混淆**：`build.gradle` 里**没有** `mappings` 块，依赖用普通 `minecraft` / `implementation` 配置而不是旧的 `modImplementation`。
 - 用到的包位置：`net.minecraft.world.entity.vehicle.minecart.MinecartChest`、`net.minecraft.world.level.chunk.status.ChunkStatus`、`net.minecraft.world.level.block.entity.vault.VaultState`、`net.minecraft.resources.Identifier`。
 - 区块未驻留时 `getChunkSource().getChunk(x, z, ChunkStatus.FULL, false)` 返回 `null`——这正是「是否已加载」的探测手段。
