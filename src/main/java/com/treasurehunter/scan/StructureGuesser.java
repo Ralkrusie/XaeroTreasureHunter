@@ -69,7 +69,13 @@ public final class StructureGuesser {
         return Component.translatable("target.treasurehunter.spawner");
     }
 
-    /** 箱子 / 木桶：按周边特征方块 + 群系 + 高度推断来源分类。 */
+    /**
+     * 箱子（含 26.3 的铜箱子）：按周边特征方块 + 群系 + 高度推断来源分类。
+     *
+     * <p>
+     * 木桶不参与分类——调用方 {@code MarkerScanner} 只对 {@code TargetType.CHEST} 调用本方法，
+     * 因为分类名一律以「箱」结尾，贴到木桶上会误导。
+     */
     public static ChestCategory guessContainerCategory(ClientLevel level, BlockPos pos) {
         Flags flags = scan(level, pos);
         int y = pos.getY();

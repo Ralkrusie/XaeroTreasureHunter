@@ -369,7 +369,10 @@ public final class MarkerScanner {
         ChestCategory category = null;
         Component label = type.label();
         if (config.smartLabels) {
-            if (type == TargetType.CHEST || type == TargetType.BARREL) {
+            // 只对箱子做结构分类；木桶一律保留「木桶」类型名，不贴结构分类。
+            // 原因：分类名一律以「箱」结尾，而营地等结构里木桶数量与箱子相当，
+            // 逐个贴成「废弃营地箱」会误导。木桶只受「木桶」目标开关控制。
+            if (type == TargetType.CHEST) {
                 // 证据区域必须已完整加载：区块边缘/传送瞬载时先把本区块标记为"未扫"，
                 // 由 2 秒兜底扫描稍后重试，避免把尚未加载的证据当成不存在而误分类
                 if (!StructureGuesser.isClassificationAreaLoaded(level, pos)) {

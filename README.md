@@ -5,7 +5,7 @@ An unofficial client-side addon for Xaero's Minimap / World Map that scans targe
 ## Target blocks (0.16.0)
 
 - Spawners (monster rooms, nether fortresses, strongholds, abandoned mineshafts)
-- Chests / trapped chests / barrels / minecarts with chests (monster rooms, villages, buried treasure, abandoned mineshafts, shipwrecks, …)
+- Chests / trapped chests / copper chests / barrels / minecarts with chests (monster rooms, villages, buried treasure, abandoned mineshafts, shipwrecks, …)
 - Bells (villages)
 - Vaults / ominous vaults (trial chambers)
 
@@ -16,7 +16,7 @@ An unofficial client-side addon for Xaero's Minimap / World Map that scans targe
   - `H` — clear all markers (and attempt to remove their waypoints); also turns scanning off (press `G` to re-enable)
   - `J` — open scan settings (two-level option tree: the main screen has entries for "Scan targets…" and "Chest type filter…" plus toggles for Smart structure labels / Chat notifications / Singleplayer only / Merge nearby waypoints; both screens use icons and ✔/✘ state indicators; changes are saved instantly)
 - **Smart structure labels** (can be disabled in settings):
-  - Chests / barrels are classified by surrounding evidence blocks + biome + height and labeled e.g. `[Monster Room Chest]`, `[Village Chest]`, `[Bastion Remnant Chest]`, `[Trial Chambers Chest]`.
+  - Chests (including the 26.3 copper chests) are classified by surrounding evidence blocks + biome + height and labeled e.g. `[Monster Room Chest]`, `[Village Chest]`, `[Bastion Remnant Chest]`, `[Trial Chambers Chest]`. **Barrels are never classified** — they always keep the plain "Barrel" label, because every category name ends in "Chest" and sticking one on a barrel would be misleading (a camp holds roughly as many barrels as chests).
     Category names follow the official structure names on the Minecraft Wiki; the biome tables and height thresholds are read directly from the 26.3 structure data (structure JSON + `has_structure` tags expanded level by level) and calibrated against measured templates.
   - `[Buried Treasure Chest]`: chunk-local X/Z both = 9 + a single normal chest + covered (top mandatory, ≥ 3 sides) + beach biome — very high confidence.
   - `[Monster Room Chest]` requires "spawner + mossy cobblestone". `[Mineshaft Chest]` relies on **minecart entity scanning** (vanilla mineshaft loot sits entirely in minecarts, not in chest blocks, so no evidence blocks are needed; waypoints update automatically as the minecart moves or when it is broken).
@@ -68,7 +68,7 @@ Xaero 小地图 / 世界地图的非官方附属 mod：客户端扫描附近**�
 ## 目标方块（0.16.0）
 
 - 刷怪笼（刷怪房、下界要塞、要塞、废弃矿井）
-- 箱子 / 陷阱箱 / 木桶 / 运输矿车箱（刷怪房、村庄、埋藏的宝藏、废弃矿井、沉船……）
+- 箱子 / 陷阱箱 / 铜箱子 / 木桶 / 运输矿车箱（刷怪房、村庄、埋藏的宝藏、废弃矿井、沉船……）
 - 钟（村庄）
 - 宝库 / 不祥宝库（试炼密室）
 
@@ -79,7 +79,7 @@ Xaero 小地图 / 世界地图的非官方附属 mod：客户端扫描附近**�
   - `H`：清空所有标记（并尝试移除路径点），同时关闭扫描（按 `G` 重新开启）
   - `J`：打开扫描设置（两级选项树：主界面 = 「扫描目标…」「箱子类型过滤…」子页入口 + 结构智能识别 / 发现提示 / 仅单人世界 / 邻近路径点合并 开关；子页与主界面均带图标与 ✔/✘ 标识；改动立即保存）
 - 结构智能识别（可在设置里关）：
-  - 箱子 / 木桶会按周围特征方块 + 群系 + 高度分类标注：`[刷怪房箱]`、`[村庄箱]`、`[堡垒遗迹箱]`、`[试炼密室箱]` 等。
+  - 箱子（含 26.3 的铜箱子）会按周围特征方块 + 群系 + 高度分类标注：`[刷怪房箱]`、`[村庄箱]`、`[堡垒遗迹箱]`、`[试炼密室箱]` 等；**木桶不参与分类**，始终显示「木桶」（分类名一律以「箱」结尾，贴到木桶上会误导；营地里木桶数量与箱子相当）。
     分类名与 Minecraft Wiki 的结构名对齐；群系表与高度门限直读 26.3 结构数据（结构 JSON + `has_structure` 标签逐级展开）并按模板实测校准
   - `[埋藏的宝藏箱]`：区块局部 X/Z 均为 9 + 单个普通箱子 + 被遮盖（上必须、侧 ≥3 面）+ 海滩群系，置信度很高
   - `[刷怪房箱]`（俗称地牢箱）要求「刷怪笼 + 苔石」；`[废弃矿井箱]` 为**运输矿车实体扫描**（原版矿井战利品全部在矿车里，没有普通箱方块，不需要证据方块；矿车移动 / 被破坏时路径点自动更新）
