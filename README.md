@@ -1,15 +1,75 @@
 # Xaero TreasureHunter
 
-Xaero 小地图 / 世界地图的附属 mod：客户端扫描附近**已加载区块**中的目标方块，并把它们以**临时路径点**的形式显示在地图上。
+An unofficial client-side addon for Xaero's Minimap / World Map that scans target blocks in nearby **loaded chunks** and displays them on the map as **temporary waypoints**.
 
-灵感来自原版调试饼图技巧（Pie-Ray，kemytz 发现）：原版要盯着饼图条目、靠走位扫出刷怪笼 / 箱子 / 钟的位置；Xaero TreasureHunter 直接把位置标在地图上。
+## Target blocks (0.14.2)
+
+- Spawners (monster rooms, nether fortresses, strongholds, abandoned mineshafts)
+- Chests / trapped chests / barrels / minecarts with chests (monster rooms, villages, buried treasure, abandoned mineshafts, shipwrecks, …)
+- Bells (villages)
+- Vaults / ominous vaults (trial chambers)
+
+## Usage
+
+- Default keybinds:
+  - `G` — toggle scanning
+  - `H` — clear all markers (and attempt to remove their waypoints); also turns scanning off (press `G` to re-enable)
+  - `J` — open scan settings (two-level option tree: the main screen has entries for "Scan targets…" and "Chest type filter…" plus toggles for Smart structure labels / Chat notifications / Singleplayer only / Merge nearby waypoints; both screens use icons and ✔/✘ state indicators; changes are saved instantly)
+- **Smart structure labels** (can be disabled in settings):
+  - Chests / barrels are classified by surrounding evidence blocks + biome + height and labeled e.g. `[Monster Room Chest]`, `[Village Chest]`, `[Bastion Remnant Chest]`, `[Trial Chambers Chest]`.
+    Category names follow the official structure names on the Minecraft Wiki; the biome tables and height thresholds are read directly from the 26.2 structure data (structure JSON + `has_structure` tags expanded level by level) and calibrated against measured templates.
+  - `[Buried Treasure Chest]`: chunk-local X/Z both = 9 + a single normal chest + covered (top mandatory, ≥ 3 sides) + beach biome — very high confidence.
+  - `[Monster Room Chest]` requires "spawner + mossy cobblestone". `[Mineshaft Chest]` relies on **minecart entity scanning** (vanilla mineshaft loot sits entirely in minecarts, not in chest blocks, so no evidence blocks are needed; waypoints update automatically as the minecart moves or when it is broken).
+  - `[Village Chest]`: hay bales / composters / bells, or bed + torch + dirt path (signs of village housing; desert villages have no dirt paths so torches serve as a fallback), plus a torches-only fallback (mine features and dark oak builds excluded) — requires a village biome (plains / meadow / desert / savanna / snowy plains / taiga) + y > 50.
+  - `[Woodland Mansion Chest]`: dark oak planks + dark forest (including pale garden) biome + y > 50 (most mansion chests have no bookshelves nearby, so bookshelves are no longer required).
+  - `[Pillager Outpost Chest]`: dark oak + cobblestone / mossy cobblestone / wool evidence + outpost biomes (all mountain variants, dark forest excluded) + y > 50 (distinguished from shipwrecks: shipwrecks have wood but no cobblestone).
+  - `[Jungle Temple Chest]`: mossy cobblestone + (tripwire trap / chiseled stone bricks / dispenser) + jungle or bamboo jungle biome + y > 35.
+  - `[Ocean Ruins Chest]`: underwater + stone brick family (cold ocean) or sandstone family (warm ocean) + ocean biome + below sea level (wiki re-checked: both cold and warm variants contain loot chests).
+  - `[Desert Pyramid Chest]`: sandstone + terracotta / TNT + desert biome + not underwater + y > 35 (prevents misclassifying underwater ruins that contain sandstone).
+  - `[Ruined Portal Chest]`: obsidian + crying obsidian (in the Overworld, netherrack is additionally accepted as corroborating evidence; in the Nether, obsidian alone decides — neither nether fortresses nor bastion remnants contain obsidian) — the structure generates in almost every biome, on the surface or buried, so no biome / height thresholds are applied.
+  - `[Shipwreck Chest]`: any wooden component (logs / planks / stairs / slabs / fences / doors / trapdoors, any wood species) + shipwreck biomes (all oceans + beaches) + no torches / rails / cobwebs indicating player activity (village houses and player builds are filtered out); the underwater variant is submerged, the beached variant sits on the shore.
+  - `[Nether Fortress Chest]` / `[Bastion Remnant Chest]`: Nether dimension + the respective biome tables; **if and only if** nether bricks lie directly below the chest = Nether Fortress (no surrounding-evidence fallback, so chests of an adjacent bastion remnant are not stolen); blackstone family (including gilded blackstone) = Bastion Remnant (surrounding evidence as fallback; bastion remnants additionally require anchor height 20–85).
+  - `[End City Chest]`: End dimension + purpur / end stone bricks (no biome check). `[Ancient City Chest]`: sculk or deepslate tiles + y < 20 (deep dark biome no longer required). `[Trial Chambers Chest]`: tuff bricks / trial spawner + y < 20.
+  - `[Igloo Chest]`: uses only basement features (brewing stand + oak sign) + y > 35 (no biome restriction; avoids misclassifying shipwrecks in frozen oceans as igloos). `[Stronghold Chest]`: stone brick family (also covers chests without nearby bookshelves outside the library; a code-generated ring-shaped structure, so no height threshold is possible).
+  - Height heuristics at a glance: underground y < 20 (trial chambers / ancient cities); surface y > 50 (villages / woodland mansions / pillager outposts); semi-underground conservative lower bound y > 35 (desert pyramids / jungle temples / igloos) — used to exclude player-built surface/underground structures.
+  - Waypoints are colored per category, and initials are localized: single Chinese characters (宝/试/矿/怪/堡/要/末/古/村/沙/林/要/哨/邸/船/雪/海/门) or English two-letter abbreviations (BT / TC / MS / MR / BA / NF / EC / AC / VL / DP / JT / SH / PO / WM / SW / IG / OR / RP / OT); spawners use S and bells use B.
+  - Spawners show the mob type, e.g. `[Spider Spawner]`, `[Blaze Spawner]` (real synced client-side data, not a guess).
+  - Double chests are registered as a single waypoint.
+  - Chest minecarts: all vanilla mineshaft loot is inside minecarts with chests, so a chest minecart is directly labeled `[Mineshaft Chest]` (the waypoint is cleaned up automatically when the minecart is destroyed or leaves the loaded area).
+  - Vaults / ominous vaults: points of interest in trial chambers (a single block in 26.x, distinguished by its ominous state) with independent toggles; once the player opens one with a key (unlocking animation / loot ejection phase), the marker and waypoint are removed automatically and it is not registered again on rescan.
+- **Chest type filter** (Settings → "Chest type filter…"): toggle each category on/off; disabled categories are no longer registered (existing markers are removed), and re-enabling one lets the next rescan rediscover it.
+- **Auto-remove after looting**: after opening and closing a chest/vault, its waypoint is removed automatically and the container is not re-added on rescan (the memory is cleared when leaving the world.)
+- **Localization**: UI text, category names, waypoint initials, the key category and notification messages are bilingual (Chinese/English, switching automatically with the game language); notifications show the actual bound keys.
+- **Merge nearby waypoints** (can be disabled in settings): no new marker when an identical marker (same type + same category) already exists within 5 blocks; when disabled, every match is marked.
+- **Waypoint lifecycle**: self-created waypoints record the waypoint set of their dimension, so dimension changes / teleporting / clearing (`H`) all clean up reliably without leaving undeletable leftovers.
+- **Scanning strategy**: only chunks that are "newly loaded / not yet scanned" are scanned (scanned on entering render distance, finished chunks are never rescanned); coverage spans the entire client-loaded area (render distance is the limit); a fallback pass every 2 seconds catches missed chunks; before classifying a container the scanner confirms the evidence area is fully loaded, deferring and retrying automatically otherwise.
+- Clearing markers (`H`) resets the chunk scan record (so targets are rediscovered), while the "already looted" memory is kept.
+- **Config**: `config/treasurehunter.json` (fallback sweep interval, target toggles, notifications, singleplayer restriction, etc.).
+- Enabled only in **singleplayer** worlds by default (on multiplayer servers this kind of scanning is commonly treated as an x-ray/cheat — decide for yourself).
+
+## Requirements
+
+- Fabric Loader ≥ 0.19.5 (26.2)
+- Fabric API
+- Optional: Xaero's Minimap (recommended 26.5.1+ for Minecraft 26.2). Without Xaero, the mod silently degrades to scan logs / notifications only. This mod contains no Xaero code and only calls Xaero's public internal API via reflection (cross-version compatibility is not guaranteed; if the API changes, the integration disables itself automatically with a one-time warning).
+
+## Warnings
+
+- Speedrun leaderboards generally disallow third-party information mods like this; use it for practice / singleplayer fun.
+- Multiplayer: effectively "legal x-ray"; many servers deploy countermeasures (AntiPieRay etc.) — use at your own risk.
+
+---
+
+# Xaero TreasureHunter（中文）
+
+Xaero 小地图 / 世界地图的非官方附属 mod：客户端扫描附近**已加载区块**中的目标方块，并把它们以**临时路径点**的形式显示在地图上。
 
 ## 目标方块（0.14.2）
 
 - 刷怪笼（刷怪房、下界要塞、要塞、废弃矿井）
 - 箱子 / 陷阱箱 / 木桶 / 运输矿车箱（刷怪房、村庄、埋藏的宝藏、废弃矿井、沉船……）
 - 钟（村庄）
-- 宝库 / 不祥宝库（试炼密室；玩家开启后自动移除）
+- 宝库 / 不祥宝库（试炼密室）
 
 ## 使用
 
@@ -40,40 +100,14 @@ Xaero 小地图 / 世界地图的附属 mod：客户端扫描附近**已加载�
   - 运输矿车箱：原版废弃矿井的战利品全部在运输矿车里，矿车箱会被直接标记为 `[废弃矿井箱]`（矿车被破坏或移出加载区时路径点自动清理）
   - 宝库 / 不祥宝库：试炼密室的兴趣方块（26.x 为同一方块、由不祥属性区分），独立开关；玩家用钥匙开启后（开启动画 / 弹出战利品阶段）自动移除标记与路径点，重扫不再登记
 - 箱子类型过滤（设置菜单 → 「箱子类型过滤…」）：逐类开关是否扫描；关闭的类别不再登记（已标记的会移除），重新打开后下一次重扫会重新发现
-- 开箱后自动删除：打开并关闭某个箱子/木桶后，对应路径点自动移除，且该容器不再被重扫加回（记忆在离开世界时清空；箱子用开合动画检测，木桶用距离近似）
+- 开箱后自动删除：打开并关闭某个箱子/使用钥匙打开宝库后，对应路径点自动移除，且该容器不再被重扫加回（记忆在离开世界时清空）
 - 语言支持：界面文字、分类名、路径点简称、键位分类名与提示消息均为中英双语（随游戏语言自动切换）；提示中的按键名显示实际键位
 - 邻近路径点合并（可在设置里关）：半径 5 格内已有相同标记（同类型 + 同分类）时不再重复标记；关闭后每个匹配都会标记
 - 路径点生命周期：自建路径点会记录所属维度的路径点集，维度切换 / 传送 / 清空（H）都能可靠清理，不会留下无法删除的残留
-- 扫描策略：只扫"新加载 / 尚未扫过"的区块（进入视距即扫、不重复扫已完成的区块），范围覆盖整个客户端已加载区域（视距即上限）；每 2 秒兜底检查一次漏网区块；容器分类前会确认证据区域已加载完整，未完成时自动推迟重试
-- 清空标记（`H`）会重置区块扫描记录（区域内目标会重新发现），但"已搜刮"记忆保留
-- 配置：`config/treasurehunter.json`（旧 trackit.json 会自动迁移；兜底扫描间隔、目标开关、通知、单人限定等）
+- 扫描策略：只扫“新加载 / 尚未扫过”的区块（进入视距即扫、不重复扫已完成的区块），范围覆盖整个客户端已加载区域（视距即上限）；每 2 秒兜底检查一次漏网区块；容器分类前会确认证据区域已加载完整，未完成时自动推迟重试
+- 清空标记（`H`）会重置区块扫描记录（区域内目标会重新发现），但“已搜刮”记忆保留
+- 配置：`config/treasurehunter.json`（兜底扫描间隔、目标开关、通知、单人限定等）
 - 默认仅在**单人世界**启用（多人服务器上这类扫描通常被视为透视/作弊，请自行判断）。
-
-## 构建
-
-需要 JDK 25（MC 26.2 要求 Java 25）。
-
-```
-./gradlew build
-```
-
-> 作者开发机备注（不影响克隆后的构建）：本机处于 TLS 检查代理之后，Java 直连下载会 PKIX 失败；相关规避（Gradle 发行版缓存、用户级 `~/.gradle/gradle.properties`）均保留在本机，不在仓库中。
-
-产物在 `build/libs/xaero-treasurehunter-0.14.2.jar`。
-
-## 本地测试（runClient）
-
-`run/mods/` 里已经放好 26.2 版的 Xaero 小地图 / 世界地图 jar：
-
-```
-./gradlew runClient
-```
-
-进单人世界后：
-- 按 `G` 开关扫描；
-- 发现的刷怪笼 / 箱子 / 木桶 / 钟会以小地图（及世界地图）路径点出现，颜色与简称按分类区分（见上）；
-- 按 `H` 清空所有标记（同时移除路径点）；
-- 按 `J` 打开扫描设置菜单。
 
 ## 依赖
 
@@ -84,4 +118,4 @@ Xaero 小地图 / 世界地图的附属 mod：客户端扫描附近**已加载�
 ## 提醒
 
 - 速通正式成绩提交基本不允许这类第三方信息 mod；请用于练习 / 单机娱乐。
-- 多人服务器：相当于"合法透视"，很多服有反制插件（AntiPieRay 等），使用风险自负。
+- 多人服务器：相当于“合法透视”，很多服有反制插件（AntiPieRay 等），使用风险自负。
