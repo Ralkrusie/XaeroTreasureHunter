@@ -70,6 +70,12 @@ Gradle 的 `GRADLE_USER_HOME` 默认是 `C:\Users\<用户>\.gradle`（本机约 
 - 真正要警惕的是**新增群系与新增结构**：26.3 新增了 `dappled_forest` 群系与 `abandoned_camp` 结构。
 - 判断新结构是否会误判：看它用了什么证据方块、落在哪些群系。`abandoned_camp` 用的是营火而**非火把**，
   且 `straw_bed` 不在 `minecraft:beds` 标签里 —— 所以村庄规则的两条分支都不会被误触发。
+- **群系标签不用查**：mod 不使用任何群系标签，全部是显式 `Biomes.X` 常量。
+  所以 `is_forest` / `is_overworld` / `spawns_cold_variant_farm_animals` 这类标签的改动与判定无关。
+- **方块标签必须查**：判定依据之一是的 11 个 `BlockTags`（`BEDS` / `LOGS` / `PLANKS` / `RAILS` /
+  `TERRACOTTA` / `WOODEN_{DOORS,FENCES,SLABS,STAIRS,TRAPDOORS}` / `WOOL`）。
+  26.3 新增了 `poplar` 木种（`poplar_planks` 及对应 `wooden_*`，并经 `logs_that_burn` → `poplar_logs` 进入 `LOGS`）——
+  因为判定走标签，**新木种自动覆盖，不需要改代码**。
 
 > **26.3 起结构模板 NBT 格式变了**：顶层不再有 `palette`（`Name` 标签出现 0 次），方块名内联在 `state` 里。
 > `scratch/` 中按 `\x08\x00\x04Name` 匹配调色板的脚本**在 26.3 数据上会返回空结果**，需要改写。
@@ -80,6 +86,24 @@ Gradle 的 `GRADLE_USER_HOME` 默认是 `C:\Users\<用户>\.gradle`（本机约 
 
 - `InputConstants.Type.KEYSYM` → `InputConstants.Type.KEYBOARD`（`SCANCODE` 也移除了）
 - `GLFW.GLFW_KEY_X` → `InputConstants.KEY_X`（用 MC 自己的常量，不要依赖 LWJGL 的 `SDLKeycode`）
+
+### 升级 Xaero 依赖时必须复核反射面
+
+`XaeroBridge` 全靠反射，签名对不上时会**静默禁用整个地图集成**（只在日志里警告一次），编译期毫无提示。
+升级 `run\mods` 里的 Xaero 后，必须用 `javap` 逐项确认：
+
+```powershell
+$jar = 'run\mods\xaerominimap-fabric-26.3-26.5.3.jar'
+& "$env:JAVA_HOME\bin\javap.exe" -cp $jar xaero.hud.minimap.BuiltInHudModules
+```
+
+需要确认的清单：`BuiltInHudModules.MINIMAP`、`HudModule#getCurrentSession`、`MinimapSession#getWorldManager`、
+`MinimapWorldManager#getCurrentWorld`、`MinimapWorld#getCurrentWaypointSet`、
+`WaypointSet#{add(Waypoint,boolean), remove(Waypoint), getWaypoints}`、
+`Waypoint` 的 9 参构造器与 `getName` / `getWaypointColor`、`WaypointPurpose.NORMAL`，
+以及 mod 用到的 **20 个 `WaypointColor` 常量**（按字符串名解析，改名不报编译错）。
+
+> 26.5.3 (MC 26.3) 上以上各项已全部确认存在。
 
 ## 仓库结构与「不在版本控制里的东西」
 
@@ -92,7 +116,7 @@ Gradle 的 `GRADLE_USER_HOME` 默认是 `C:\Users\<用户>\.gradle`（本机约 
 | `scratch\` | 全部 API / 结构数据探针脚本与 `.txt` 输出 | **本项目验证方法论的本体**，新克隆的仓库里没有 |
 | `run\` | dev 运行时，`run\mods` 里放 Xaero jar | 进游戏联调用 |
 | `tools\` | `gradle-9.5.1-bin.zip` 离线备份 | 网络不稳时的兜底 |
-| `.vscode\` | `tasks.json` 5 个任务（build / clean build / runClient / 部署 / appdiag） | 2026-09 从 709 行历史任务精简而来 |
+| `.vscode\` | `tasks.json` 4 个任务（build / clean build / runClient / 部署到测试实例） | 2026-09 从 709 行历史任务精简而来 |
 
 因为 `scratch\` 不进版本控制，**分类阈值背后的实测证据（模板扫描结果、结构 JSON 展开表）只存在于本机**。改动 `StructureGuesser` 的判定规则时，别假设这些证据能被重新推导出来。
 

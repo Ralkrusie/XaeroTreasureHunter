@@ -15,7 +15,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * <p>
  * Xaero 不开源也不提供正式的 Java API，这里通过反射调用其公开成员
- * （签名已在 xaerominimap 26.5.1 (MC 26.2) 上用 javap 校验）：
+ * （签名已在 xaerominimap 26.5.3 (MC 26.3) 上用 javap 逐项校验：下列类与成员、
+ * 9 参 {@code Waypoint} 构造器、{@code WaypointPurpose.NORMAL}
+ * 与全部 20 个 {@code WaypointColor} 常量均确认存在）：
  * <ul>
  * <li>{@code xaero.hud.minimap.BuiltInHudModules.MINIMAP}（public static
  * field）</li>
