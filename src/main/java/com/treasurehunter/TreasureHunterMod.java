@@ -12,7 +12,6 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import org.lwjgl.glfw.GLFW;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -67,12 +66,14 @@ public class TreasureHunterMod implements ClientModInitializer {
         config = TreasureHunterConfig.load(configPath);
         scanner = new MarkerScanner(config);
 
+        // 26.3 起窗口层由 GLFW 换成 SDL：Type.KEYSYM 改名 KEYBOARD，
+        // 键值改用 MC 自己的 InputConstants.KEY_*（不再依赖 LWJGL 的 GLFW 常量）。
         toggleKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-                "key.treasurehunter.toggle", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_G, KEY_CATEGORY));
+                "key.treasurehunter.toggle", InputConstants.Type.KEYBOARD, InputConstants.KEY_G, KEY_CATEGORY));
         clearKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-                "key.treasurehunter.clear", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_H, KEY_CATEGORY));
+                "key.treasurehunter.clear", InputConstants.Type.KEYBOARD, InputConstants.KEY_H, KEY_CATEGORY));
         settingsKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-                "key.treasurehunter.settings", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_J, KEY_CATEGORY));
+                "key.treasurehunter.settings", InputConstants.Type.KEYBOARD, InputConstants.KEY_J, KEY_CATEGORY));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (toggleKey.consumeClick()) {

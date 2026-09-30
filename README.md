@@ -2,7 +2,7 @@
 
 An unofficial client-side addon for Xaero's Minimap / World Map that scans target blocks in nearby **loaded chunks** and displays them on the map as **temporary waypoints**.
 
-## Target blocks (0.14.2)
+## Target blocks (0.15.0)
 
 - Spawners (monster rooms, nether fortresses, strongholds, abandoned mineshafts)
 - Chests / trapped chests / barrels / minecarts with chests (monster rooms, villages, buried treasure, abandoned mineshafts, shipwrecks, …)
@@ -17,7 +17,7 @@ An unofficial client-side addon for Xaero's Minimap / World Map that scans targe
   - `J` — open scan settings (two-level option tree: the main screen has entries for "Scan targets…" and "Chest type filter…" plus toggles for Smart structure labels / Chat notifications / Singleplayer only / Merge nearby waypoints; both screens use icons and ✔/✘ state indicators; changes are saved instantly)
 - **Smart structure labels** (can be disabled in settings):
   - Chests / barrels are classified by surrounding evidence blocks + biome + height and labeled e.g. `[Monster Room Chest]`, `[Village Chest]`, `[Bastion Remnant Chest]`, `[Trial Chambers Chest]`.
-    Category names follow the official structure names on the Minecraft Wiki; the biome tables and height thresholds are read directly from the 26.2 structure data (structure JSON + `has_structure` tags expanded level by level) and calibrated against measured templates.
+    Category names follow the official structure names on the Minecraft Wiki; the biome tables and height thresholds are read directly from the 26.3 structure data (structure JSON + `has_structure` tags expanded level by level) and calibrated against measured templates.
   - `[Buried Treasure Chest]`: chunk-local X/Z both = 9 + a single normal chest + covered (top mandatory, ≥ 3 sides) + beach biome — very high confidence.
   - `[Monster Room Chest]` requires "spawner + mossy cobblestone". `[Mineshaft Chest]` relies on **minecart entity scanning** (vanilla mineshaft loot sits entirely in minecarts, not in chest blocks, so no evidence blocks are needed; waypoints update automatically as the minecart moves or when it is broken).
   - `[Village Chest]`: hay bales / composters / bells, or bed + torch + dirt path (signs of village housing; desert villages have no dirt paths so torches serve as a fallback), plus a torches-only fallback (mine features and dark oak builds excluded) — requires a village biome (plains / meadow / desert / savanna / snowy plains / taiga) + y > 50.
@@ -49,9 +49,9 @@ An unofficial client-side addon for Xaero's Minimap / World Map that scans targe
 
 ## Requirements
 
-- Fabric Loader ≥ 0.19.5 (26.2)
+- Fabric Loader ≥ 0.19.5 (26.3)
 - Fabric API
-- Optional: Xaero's Minimap (recommended 26.5.1+ for Minecraft 26.2). Without Xaero, the mod silently degrades to scan logs / notifications only. This mod contains no Xaero code and only calls Xaero's public internal API via reflection (cross-version compatibility is not guaranteed; if the API changes, the integration disables itself automatically with a one-time warning).
+- Optional: Xaero's Minimap (recommended 26.5.3+ for Minecraft 26.3). Without Xaero, the mod silently degrades to scan logs / notifications only. This mod contains no Xaero code and only calls Xaero's public internal API via reflection (cross-version compatibility is not guaranteed; if the API changes, the integration disables itself automatically with a one-time warning).
 
 ## Warnings
 
@@ -64,7 +64,7 @@ An unofficial client-side addon for Xaero's Minimap / World Map that scans targe
 
 Xaero 小地图 / 世界地图的非官方附属 mod：客户端扫描附近**已加载区块**中的目标方块，并把它们以**临时路径点**的形式显示在地图上。
 
-## 目标方块（0.14.2）
+## 目标方块（0.15.0）
 
 - 刷怪笼（刷怪房、下界要塞、要塞、废弃矿井）
 - 箱子 / 陷阱箱 / 木桶 / 运输矿车箱（刷怪房、村庄、埋藏的宝藏、废弃矿井、沉船……）
@@ -79,7 +79,7 @@ Xaero 小地图 / 世界地图的非官方附属 mod：客户端扫描附近**�
   - `J`：打开扫描设置（两级选项树：主界面 = 「扫描目标…」「箱子类型过滤…」子页入口 + 结构智能识别 / 发现提示 / 仅单人世界 / 邻近路径点合并 开关；子页与主界面均带图标与 ✔/✘ 标识；改动立即保存）
 - 结构智能识别（可在设置里关）：
   - 箱子 / 木桶会按周围特征方块 + 群系 + 高度分类标注：`[刷怪房箱]`、`[村庄箱]`、`[堡垒遗迹箱]`、`[试炼密室箱]` 等。
-    分类名与 Minecraft Wiki 的结构名对齐；群系表与高度门限直读 26.2 结构数据（结构 JSON + `has_structure` 标签逐级展开）并按模板实测校准
+    分类名与 Minecraft Wiki 的结构名对齐；群系表与高度门限直读 26.3 结构数据（结构 JSON + `has_structure` 标签逐级展开）并按模板实测校准
   - `[埋藏的宝藏箱]`：区块局部 X/Z 均为 9 + 单个普通箱子 + 被遮盖（上必须、侧 ≥3 面）+ 海滩群系，置信度很高
   - `[刷怪房箱]`（俗称地牢箱）要求「刷怪笼 + 苔石」；`[废弃矿井箱]` 为**运输矿车实体扫描**（原版矿井战利品全部在矿车里，没有普通箱方块，不需要证据方块；矿车移动 / 被破坏时路径点自动更新）
   - `[村庄箱]`：干草捆 / 堆肥桶 / 钟，或床+火把+土径（村庄房屋的生活痕迹；沙漠村庄没有土径，走火把兜底），或火把兜底（需排除矿井特征与深色橡木建筑）——要求村庄群系（平原/草甸/沙漠/热带草原/积雪平原/针叶林）+ y > 50
@@ -111,9 +111,9 @@ Xaero 小地图 / 世界地图的非官方附属 mod：客户端扫描附近**�
 
 ## 依赖
 
-- Fabric Loader ≥ 0.19.5（26.2）
+- Fabric Loader ≥ 0.19.5（26.3）
 - Fabric API
-- 可选：Xaero's Minimap（推荐 26.5.1+，26.2 版）。没有 Xaero 时 mod 静默降级，只保留扫描日志 / 通知。本模组不包含任何 Xaero 代码，仅通过反射调用其公开内部 API（不保证跨版本兼容，API 变化时自动禁用集成并给出一次警告）。
+- 可选：Xaero's Minimap（推荐 26.5.3+，26.3 版）。没有 Xaero 时 mod 静默降级，只保留扫描日志 / 通知。本模组不包含任何 Xaero 代码，仅通过反射调用其公开内部 API（不保证跨版本兼容，API 变化时自动禁用集成并给出一次警告）。
 
 ## 提醒
 
