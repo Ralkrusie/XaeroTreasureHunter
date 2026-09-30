@@ -40,6 +40,7 @@ public final class OptionIcons {
     private static final ItemStack CAT_IGLOO = new ItemStack(Items.SNOWBALL);
     private static final ItemStack CAT_OCEAN_RUINS = new ItemStack(Items.BRUSH);
     private static final ItemStack CAT_RUINED_PORTAL = new ItemStack(Items.CRYING_OBSIDIAN);
+    private static final ItemStack CAT_ABANDONED_CAMP = new ItemStack(Items.CAMPFIRE);
     private static final ItemStack CAT_OTHER = new ItemStack(Items.CHEST);
 
     private OptionIcons() {
@@ -96,6 +97,7 @@ public final class OptionIcons {
             case IGLOO -> CAT_IGLOO;
             case OCEAN_RUINS -> CAT_OCEAN_RUINS;
             case RUINED_PORTAL -> CAT_RUINED_PORTAL;
+            case ABANDONED_CAMP -> CAT_ABANDONED_CAMP;
             case OTHER -> CAT_OTHER;
         };
     }

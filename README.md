@@ -2,7 +2,7 @@
 
 An unofficial client-side addon for Xaero's Minimap / World Map that scans target blocks in nearby **loaded chunks** and displays them on the map as **temporary waypoints**.
 
-## Target blocks (0.15.0)
+## Target blocks (0.16.0)
 
 - Spawners (monster rooms, nether fortresses, strongholds, abandoned mineshafts)
 - Chests / trapped chests / barrels / minecarts with chests (monster rooms, villages, buried treasure, abandoned mineshafts, shipwrecks, …)
@@ -27,12 +27,13 @@ An unofficial client-side addon for Xaero's Minimap / World Map that scans targe
   - `[Ocean Ruins Chest]`: underwater + stone brick family (cold ocean) or sandstone family (warm ocean) + ocean biome + below sea level (wiki re-checked: both cold and warm variants contain loot chests).
   - `[Desert Pyramid Chest]`: sandstone + terracotta / TNT + desert biome + not underwater + y > 35 (prevents misclassifying underwater ruins that contain sandstone).
   - `[Ruined Portal Chest]`: obsidian + crying obsidian (in the Overworld, netherrack is additionally accepted as corroborating evidence; in the Nether, obsidian alone decides — neither nether fortresses nor bastion remnants contain obsidian) — the structure generates in almost every biome, on the surface or buried, so no biome / height thresholds are applied.
+  - `[Abandoned Camp Chest]`: any colour of wool stairs — a 26.3-exclusive block that appears in no other structure (verified across 1511 structure templates), so it decides on its own; the copper chest (also camp-exclusive) is recognised directly from the container block. Campfires are deliberately **not** used as evidence: they also generate in ancient cities, trail ruins and villages, so they are not exclusive.
   - `[Shipwreck Chest]`: any wooden component (logs / planks / stairs / slabs / fences / doors / trapdoors, any wood species) + shipwreck biomes (all oceans + beaches) + no torches / rails / cobwebs indicating player activity (village houses and player builds are filtered out); the underwater variant is submerged, the beached variant sits on the shore.
   - `[Nether Fortress Chest]` / `[Bastion Remnant Chest]`: Nether dimension + the respective biome tables; **if and only if** nether bricks lie directly below the chest = Nether Fortress (no surrounding-evidence fallback, so chests of an adjacent bastion remnant are not stolen); blackstone family (including gilded blackstone) = Bastion Remnant (surrounding evidence as fallback; bastion remnants additionally require anchor height 20–85).
   - `[End City Chest]`: End dimension + purpur / end stone bricks (no biome check). `[Ancient City Chest]`: sculk or deepslate tiles + y < 20 (deep dark biome no longer required). `[Trial Chambers Chest]`: tuff bricks / trial spawner + y < 20.
   - `[Igloo Chest]`: uses only basement features (brewing stand + oak sign) + y > 35 (no biome restriction; avoids misclassifying shipwrecks in frozen oceans as igloos). `[Stronghold Chest]`: stone brick family (also covers chests without nearby bookshelves outside the library; a code-generated ring-shaped structure, so no height threshold is possible).
   - Height heuristics at a glance: underground y < 20 (trial chambers / ancient cities); surface y > 50 (villages / woodland mansions / pillager outposts); semi-underground conservative lower bound y > 35 (desert pyramids / jungle temples / igloos) — used to exclude player-built surface/underground structures.
-  - Waypoints are colored per category, and initials are localized: single Chinese characters (宝/试/矿/怪/堡/要/末/古/村/沙/林/要/哨/邸/船/雪/海/门) or English two-letter abbreviations (BT / TC / MS / MR / BA / NF / EC / AC / VL / DP / JT / SH / PO / WM / SW / IG / OR / RP / OT); spawners use S and bells use B.
+  - Waypoints are colored per category, and initials are localized: single Chinese characters (宝/试/矿/怪/堡/要/末/古/村/沙/林/要/哨/邸/船/雪/海/门) or English two-letter abbreviations (BT / TC / MS / MR / BA / NF / EC / AC / VL / DP / JT / SH / PO / WM / SW / IG / OR / RP / CP / OT); spawners use S and bells use B.
   - Spawners show the mob type, e.g. `[Spider Spawner]`, `[Blaze Spawner]` (real synced client-side data, not a guess).
   - Double chests are registered as a single waypoint.
   - Chest minecarts: all vanilla mineshaft loot is inside minecarts with chests, so a chest minecart is directly labeled `[Mineshaft Chest]` (the waypoint is cleaned up automatically when the minecart is destroyed or leaves the loaded area).
@@ -64,7 +65,7 @@ An unofficial client-side addon for Xaero's Minimap / World Map that scans targe
 
 Xaero 小地图 / 世界地图的非官方附属 mod：客户端扫描附近**已加载区块**中的目标方块，并把它们以**临时路径点**的形式显示在地图上。
 
-## 目标方块（0.15.0）
+## 目标方块（0.16.0）
 
 - 刷怪笼（刷怪房、下界要塞、要塞、废弃矿井）
 - 箱子 / 陷阱箱 / 木桶 / 运输矿车箱（刷怪房、村庄、埋藏的宝藏、废弃矿井、沉船……）
@@ -89,12 +90,13 @@ Xaero 小地图 / 世界地图的非官方附属 mod：客户端扫描附近**�
   - `[海底废墟箱]`：水下 + 石砖族（冷海）或砂岩族（暖海）+ 海洋群系 + 海平面以下（wiki 复核：冷/暖变体都有战利品箱）
   - `[沙漠神殿箱]`：砂岩 + 陶瓦/TNT + 沙漠群系 + 非水下 + y > 35（避免误判含砂岩的水下废墟）
   - `[废弃传送门箱]`：黑曜石 + 哭泣的黑曜石（主世界可加 下界岩 佐证；下界直接以黑曜石判定——下界要塞/堡垒遗迹都不含黑曜石）——变体覆盖几乎所有群系、地表与掩埋都有，故不加群系/高度门限
+  - `[废弃营地箱]`：任意颜色的羊毛楼梯即可定案——26.3 新增方块，实测 1511 个结构模板中仅出现在废弃营地；铜箱子（同为营地独有）直接由容器方块本身判定。**不**用营火作证据——远古城市 / 古迹废墟 / 村庄也生成营火，不具排他性
   - `[沉船箱]`：任意木制部件（原木 / 木板 / 楼梯 / 台阶 / 栅栏 / 门 / 活板门，任意木种）+ 沉船群系（全部海洋 + 海滩）+ 无火把/铁轨/蛛网等人为痕迹（村庄房屋、玩家建筑会被排除）；水下变体泡在水里，搁浅变体在海滩
   - `[下界要塞箱]` / `[堡垒遗迹箱]`：下界维度 + 各自群系表；**当且仅当**下界砖在箱子正下方 = 下界要塞（不再用周边证据兜底，避免抢走紧邻的堡垒遗迹箱）；黑石族（含镶金黑石）= 堡垒遗迹（周边证据兜底；堡垒遗迹另加锚点高度 20~85）
   - `[末地城箱]`：末地维度 + 紫珀/末地石砖（不再检测群系）；`[远古城市箱]`：幽匿 或 深层板岩砖 + y < 20（不再强制深暗之域群系）；`[试炼密室箱]`：凝灰岩砖/试炼刷怪笼 + y < 20
   - `[雪屋箱]`：只用地下室特征（酿造台 + 橡木告示牌）+ y > 35（不限制群系；避免结冰海洋的沉船被误判为雪屋）；`[要塞箱]`：石砖族（图书馆之外、附近没有书架的箱子也覆盖；代码生成的环状结构，无法加门限）
   - 高度辅助汇总：地下 y < 20（试炼密室 / 远古城市）；地表 y > 50（村庄 / 林地府邸 / 掠夺者前哨站）；半地下保守下限 y > 35（沙漠神殿 / 丛林神庙 / 雪屋）——用于排除玩家自建的地表/地下结构
-  - 路径点按分类着色，简称随语言本地化：中文单字（宝/试/矿/怪/堡/要/末/古/村/沙/林/要/哨/邸/船/雪/海/门），英文双字母缩写（BT/TC/MS/MR/BA/NF/EC/AC/VL/DP/JT/SH/PO/WM/SW/IG/OR/RP/OT），刷怪笼/钟为 S/B
+  - 路径点按分类着色，简称随语言本地化：中文单字（宝/试/矿/怪/堡/要/末/古/村/沙/林/要/哨/邸/船/雪/海/门/营），英文双字母缩写（BT/TC/MS/MR/BA/NF/EC/AC/VL/DP/JT/SH/PO/WM/SW/IG/OR/RP/CP/OT），刷怪笼/钟为 S/B
   - 刷怪笼显示生物种类，如 `[蜘蛛笼]`、`[烈焰人笼]`（客户端同步的真实数据，非推断）
   - 双联箱只登记一个路径点
   - 运输矿车箱：原版废弃矿井的战利品全部在运输矿车里，矿车箱会被直接标记为 `[废弃矿井箱]`（矿车被破坏或移出加载区时路径点自动清理）

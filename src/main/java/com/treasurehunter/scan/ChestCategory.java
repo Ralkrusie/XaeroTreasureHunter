@@ -28,6 +28,7 @@ public enum ChestCategory {
     IGLOO("igloo", "WHITE"),
     OCEAN_RUINS("ocean_ruins", "BLUE"),
     RUINED_PORTAL("ruined_portal", "MAGENTA"),
+    ABANDONED_CAMP("abandoned_camp", "BLACK"),
     OTHER("other", "GRAY");
 
     private final String id;

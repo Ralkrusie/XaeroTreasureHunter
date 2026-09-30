@@ -1,6 +1,7 @@
 package com.treasurehunter;
 
 import net.minecraft.network.chat.Component;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.VaultBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -53,7 +54,9 @@ public enum TargetType {
         if (state.is(Blocks.SPAWNER)) {
             return SPAWNER;
         }
-        if (state.is(Blocks.CHEST) || state.is(Blocks.TRAPPED_CHEST)) {
+        // 26.3 新增的铜箱子（4 种氧化程度 × 打蜡与否 = 8 种变体，继承自 ChestBlock）。
+        // 与普通箱子同属「箱子」目标，来源分类交给 StructureGuesser 判为废弃营地。
+        if (state.is(Blocks.CHEST) || state.is(Blocks.TRAPPED_CHEST) || state.is(BlockTags.COPPER_CHESTS)) {
             return CHEST;
         }
         if (state.is(Blocks.BARREL)) {

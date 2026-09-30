@@ -95,6 +95,14 @@ public final class StructureGuesser {
         if (flags.trial && y < UNDERGROUND_MAX_Y) {
             return ChestCategory.TRIAL;
         }
+        // 废弃营地（26.3 新结构）：羊毛楼梯是 26.3 新增方块（16 色），实测 1511 个结构模板中
+        // **仅**出现在废弃营地，单独即可定案；铜箱子同样是营地排他的（8 种变体），
+        // 因此容器本身就是铜箱子时直接判定。两者都放在村庄等启发式规则之前，避免被抢走。
+        // 门限说明：营地是地表 size 2 的小结构（森林/针叶林/热带草原等），不加群系或高度门限。
+        // 营火不作为证据——它在远古城市 / 古迹废墟 / 村庄同样出现，不具备排他性。
+        if (level.getBlockState(pos).is(BlockTags.COPPER_CHESTS) || flags.woolStairs) {
+            return ChestCategory.ABANDONED_CAMP;
+        }
         // 刷怪房箱（俗称地牢箱）：刷怪笼 + 苔石（缺一不可）。
         // 门限说明：原版刷怪房是代码型特征，无群系/高度数据（任意群系的地下都有）
         if (flags.spawner && flags.mossy) {
@@ -391,6 +399,9 @@ public final class StructureGuesser {
                 flags.wood = true;
             } else if (state.is(BlockTags.WOOL)) {
                 flags.wool = true;
+            } else if (state.is(BlockTags.WOOL_STAIRS)) {
+                // 26.3 新增方块（16 色）：实测 1511 个结构模板中仅出现在废弃营地，是其排他性证据
+                flags.woolStairs = true;
             } else if (state.is(BlockTags.RAILS)) {
                 flags.rail = true;
             } else if (block == Blocks.COBWEB) {
@@ -463,6 +474,7 @@ public final class StructureGuesser {
         boolean darkOakPlanks;
         boolean darkOakFence;
         boolean wool;
+        boolean woolStairs;
         boolean rail;
         boolean cobweb;
         boolean tripwire;
