@@ -27,6 +27,11 @@ Copy-Item build\libs\xaero-treasurehunter-<version>.jar 'D:\Games\MC\.minecraft\
 - `~\.gradle` 下**没有** `caches\fabric-loom\assets`，所以首次 `runClient` 需要联网下载 MC 资源（数百 MB）。
 - 项目**没有测试**：没有 `src/test`、没有测试框架、没有 CI。验证 = 编译 + `scratch\` 探针 + 进游戏实测。
 
+> ⚠️ **游戏运行时 `mods\` 里的 jar 会被锁住**：`Remove-Item` 报「正由另一进程使用」，
+> 于是一次看似成功的「删旧 + 拷新」会**静默失败**并留下两个版本 —— Fabric Loader 会因重复 mod id 直接拒绝加载。
+> 换版本前先确认游戏已退出；拷完用 `Get-FileHash` 比对源与目标，确认进去的确实是当前构建
+> （`Copy-Item` 会保留源文件的修改时间，光看时间戳会误判）。
+
 ### ⚠️ DSH 沙箱前提（重要）
 
 Gradle 的 `GRADLE_USER_HOME` 默认是 `C:\Users\<用户>\.gradle`（本机约 2.8 GB，含 loom 的 MC 反混淆 jar、`modules-2` 依赖缓存、Gradle 9.5.1 发行包），它在工作区**之外**。
@@ -89,6 +94,17 @@ Gradle 的 `GRADLE_USER_HOME` 默认是 `C:\Users\<用户>\.gradle`（本机约 
   26.3 新增了 `poplar` 木种（`poplar_planks` 及对应 `wooden_*`，并经 `logs_that_burn` → `poplar_logs` 进入 `LOGS`）——
   因为判定走标签，**新木种自动覆盖，不需要改代码**。
 
+**新增结构的证据方块必须先验证排他性。** 扫全部结构模板、按顶层目录归类，只有单一结构出现的才能单独作证据：
+
+```powershell
+# 逐个 gzip 解压 data/minecraft/structure/**.nbt，按 ASCII 匹配候选方块名，按路径首段归类
+# 26.3 共 1511 个模板，全量约 1~2 分钟
+```
+
+26.3 实测结果：`wool_stairs` 与 `copper_chest` **仅**出现在 `abandoned_camp`；
+而 `campfire` 还出现在 `ancient_city` / `trail_ruins` / `village` —— 所以**营火不能作营地证据**
+（与营火做「与」只会降低召回，不提升精度）。
+
 > **26.3 起结构模板 NBT 格式变了**：顶层不再有 `palette`（`Name` 标签出现 0 次），方块名内联在 `state` 里。
 > `scratch/` 中按 `\x08\x00\x04Name` 匹配调色板的脚本**在 26.3 数据上会返回空结果**，需要改写。
 
@@ -119,6 +135,17 @@ $jar = 'run\mods\xaerominimap-fabric-26.3-26.5.3.jar'
 以及 mod 用到的 **20 个 `WaypointColor` 常量**（按字符串名解析，改名不报编译错）。
 
 > 26.5.3 (MC 26.3) 上以上各项已全部确认存在。
+
+### 废弃营地（0.16.0 新增，第 20 类）
+
+- 判定走两条**各自排他**的信号：`BlockTags.WOOL_STAIRS`（16 色），或容器本身是 `BlockTags.COPPER_CHESTS`（8 变体）
+- 规则必须放在村庄等启发式**之前**（先匹配先赢），否则营地箱会被村庄的铁轨/干草等规则抢走
+- 不加群系 / 高度门限：营地是地表 size 2 的小结构
+- 铜箱子 `extends ChestBlock`，因此开箱自动移除、路径点生命周期等既有逻辑**无需改动**；
+  它在 `TargetType` 里并入 `CHEST`（不单开目标类型）
+- **木桶不参与任何结构分类**：`MarkerScanner` 只对 `TargetType.CHEST` 调 `guessContainerCategory`。
+  原因是分类名一律以「箱」结尾，而营地里木桶数量与箱子相当（模板实测 384 vs 369 次），
+  贴成「废弃营地箱」会误导。木桶现在只受 `TargetType.BARREL` 一个开关控制
 
 ## 仓库结构与「不在版本控制里的东西」
 
