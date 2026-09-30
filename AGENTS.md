@@ -4,7 +4,7 @@
 
 ## 项目是什么
 
-Xaero 小地图 / 世界地图的**非官方客户端附属 mod**（Fabric · Minecraft 26.2 · Java 25）。它扫描客户端已加载区块中的目标方块（刷怪笼 / 箱子 / 陷阱箱 / 木桶 / 运输矿车箱 / 钟 / 宝库），按**周边特征方块 + 群系 + 高度**推断结构来源，并写成 Xaero 的**临时路径点**。
+Xaero 小地图 / 世界地图的**非官方客户端附属 mod**（Fabric · Minecraft 26.3 · Java 25）。它扫描客户端已加载区块中的目标方块（刷怪笼 / 箱子 / 陷阱箱 / 木桶 / 运输矿车箱 / 钟 / 宝库），按**周边特征方块 + 群系 + 高度**推断结构来源，并写成 Xaero 的**临时路径点**。
 
 - 纯客户端：不修改世界数据、不发自定义包、无服务端组件。
 - 不含任何 Xaero 代码：仅通过字符串反射调用其公开内部 API，API 变动时静默降级并只警告一次。
@@ -20,10 +20,10 @@ Xaero 小地图 / 世界地图的**非官方客户端附属 mod**（Fabric · Mi
 改完代码要进游戏验证时，把 jar 拷进实际测试实例（本机路径）：
 
 ```powershell
-Copy-Item build\libs\xaero-treasurehunter-<version>.jar 'D:\Games\MC\.minecraft\versions\bingo-26.2\mods\' -Force
+Copy-Item build\libs\xaero-treasurehunter-<version>.jar 'D:\Games\MC\.minecraft\versions\26.3-Fabric 0.19.5\mods\' -Force
 ```
 
-- `run\mods\` 里已备好 Xaero 小地图 26.5.1 与 Xaero 世界地图 1.46.1，供 `gradlew runClient` 联调。
+- `run\mods\` 里已备好 Xaero 小地图 26.5.3 与 Xaero 世界地图 1.46.4，供 `gradlew runClient` 联调。
 - `~\.gradle` 下**没有** `caches\fabric-loom\assets`，所以首次 `runClient` 需要联网下载 MC 资源（数百 MB）。
 - 项目**没有测试**：没有 `src/test`、没有测试框架、没有 CI。验证 = 编译 + `scratch\` 探针 + 进游戏实测。
 
@@ -40,11 +40,46 @@ Gradle 的 `GRADLE_USER_HOME` 默认是 `C:\Users\<用户>\.gradle`（本机约 
 一次发版要改这几处，漏一处就会出现"jar 名对不上 README"：
 
 1. `gradle.properties` → `mod_version`
-2. `README.md` → 英文段与中文段的 `（0.14.2）` 标题
+2. `README.md` → 英文段与中文段的 `（0.15.0）` 标题
 3. `scratch\release-notes.md` → 安装步骤里的 jar 文件名（该文件不进版本控制）
 4. git tag `v<version>`
 
 `fabric.mod.json` 的 `version` 由 `processResources` 从 `project.version` 展开，不用手改。
+
+### 升级 Minecraft 版本（26.2 → 26.3 的实际流程）
+
+1. **建分支**：`git checkout -b mc-XX`。迁移期主分支会编译不过，main 保持可发布。
+2. **改四处**：`gradle.properties` 的 `minecraft_version` / `fabric_api_version` / `mod_version`，
+   以及 **`fabric.mod.json` 的 `minecraft` 约束（`~26.2` → `~26.3`）**。
+   ⚠️ 漏掉最后这处，构建照样成功，但 Fabric Loader 进游戏时直接拒绝加载 —— 最容易白跑一轮的地方。
+3. **依赖版本从现成实例抄**：`D:\Games\MC\.minecraft\versions\<版本>\mods\` 里已有跑通的 Fabric API 与 Xaero 版本号，比查网页快且准。
+4. **Loom 未必需要升**：26.2 → 26.3 时 Loom 1.17.21 直接可用。
+5. **编译 → 修错**：用 `javap` 确认新签名，别猜。
+6. **复核结构数据**（见下）—— 编译通过查不出来的部分。
+7. **验证产物**：解包 `build\libs\*.jar` 直接看 `fabric.mod.json` 的 `version` 与 `minecraft` 约束。
+8. **进游戏实测通过后**才打 tag。
+
+首次构建新 MC 版本会联网下载约 155 MB 的 MC jar，缓存在 `~\.gradle\caches\fabric-loom\minecraftMaven\`。
+
+### 版本升级时的结构数据复核
+
+编译通过**不代表**判定还准。比对新旧 MC jar 里 `data/minecraft/` 的内容：
+
+- 看 `worldgen/structure/*.json` 与 `tags/worldgen/biome/has_structure/*.json` —— 群系表与高度门限的来源。
+- 典型**噪声**（不影响 mod）：`spawn_overrides` 的 `maxCount`/`minCount` 合并成 `count`、`air_pocket_probability` 改值。
+- 真正要警惕的是**新增群系与新增结构**：26.3 新增了 `dappled_forest` 群系与 `abandoned_camp` 结构。
+- 判断新结构是否会误判：看它用了什么证据方块、落在哪些群系。`abandoned_camp` 用的是营火而**非火把**，
+  且 `straw_bed` 不在 `minecraft:beds` 标签里 —— 所以村庄规则的两条分支都不会被误触发。
+
+> **26.3 起结构模板 NBT 格式变了**：顶层不再有 `palette`（`Name` 标签出现 0 次），方块名内联在 `state` 里。
+> `scratch/` 中按 `\x08\x00\x04Name` 匹配调色板的脚本**在 26.3 数据上会返回空结果**，需要改写。
+
+### 26.3 的 GLFW → SDL 变更
+
+26.3 把窗口层从 GLFW 换成 SDL，类路径上是 `lwjgl-sdl`，`org.lwjgl.glfw` **整个包不存在**：
+
+- `InputConstants.Type.KEYSYM` → `InputConstants.Type.KEYBOARD`（`SCANCODE` 也移除了）
+- `GLFW.GLFW_KEY_X` → `InputConstants.KEY_X`（用 MC 自己的常量，不要依赖 LWJGL 的 `SDLKeycode`）
 
 ## 仓库结构与「不在版本控制里的东西」
 
@@ -57,7 +92,7 @@ Gradle 的 `GRADLE_USER_HOME` 默认是 `C:\Users\<用户>\.gradle`（本机约 
 | `scratch\` | 全部 API / 结构数据探针脚本与 `.txt` 输出 | **本项目验证方法论的本体**，新克隆的仓库里没有 |
 | `run\` | dev 运行时，`run\mods` 里放 Xaero jar | 进游戏联调用 |
 | `tools\` | `gradle-9.5.1-bin.zip` 离线备份 | 网络不稳时的兜底 |
-| `.vscode\` | `tasks.json` 709 行历史任务 | 绝大多数是一次性产物（反复出现 "build 0.x"），参考价值低 |
+| `.vscode\` | `tasks.json` 5 个任务（build / clean build / runClient / 部署 / appdiag） | 2026-09 从 709 行历史任务精简而来 |
 
 因为 `scratch\` 不进版本控制，**分类阈值背后的实测证据（模板扫描结果、结构 JSON 展开表）只存在于本机**。改动 `StructureGuesser` 的判定规则时，别假设这些证据能被重新推导出来。
 
@@ -149,7 +184,7 @@ gui\*                                        → 两级选项树设置界面
 
 **定位反混淆 jar**（多数脚本硬编码此路径）：
 ```
-C:\Users\<用户>\.gradle\caches\fabric-loom\minecraftMaven\net\minecraft\minecraft-merged-deobf\26.2\minecraft-merged-deobf-26.2.jar
+C:\Users\<用户>\.gradle\caches\fabric-loom\minecraftMaven\net\minecraft\minecraft-merged-deobf\26.3\minecraft-merged-deobf-26.3.jar
 ```
 
 **探 API 签名**——`javap` 是主力：
@@ -160,8 +195,8 @@ C:\Users\<用户>\.gradle\caches\fabric-loom\minecraftMaven\net\minecraft\minecr
 ```
 `javap -c` 真的被用来证明过结论，例如客户端 `BlockEntity#getUpdateTag` 返回空 tag（因此开箱前读不到战利品，只能靠启发式分类），以及从 `MonsterRoomFeature` 字节码里读尺寸常量。
 
-- **Fabric API**：`fabric-api-0.161.0+26.2.jar` 是个容器，需要 `jar xf` 出 `META-INF/jars/` 下的嵌套 jar（如 `fabric-key-mapping-api-v1`）再 `javap`——`KeyMappingHelper.registerKeyMapping(KeyMapping)` 就是这么确认的。
-- **Xaero API**：直接对 `run\mods\xaerominimap-fabric-26.2-26.5.1.jar` 跑 `javap`，例如枚举 `xaero.hud.minimap.waypoint.WaypointColor` 的合法常量后再选色。
+- **Fabric API**：`fabric-api-0.161.0+26.3.jar` 是个容器，需要 `jar xf` 出 `META-INF/jars/` 下的嵌套 jar（如 `fabric-key-mapping-api-v1`）再 `javap`——`KeyMappingHelper.registerKeyMapping(KeyMapping)` 就是这么确认的。
+- **Xaero API**：直接对 `run\mods\xaerominimap-fabric-26.3-26.5.3.jar` 跑 `javap`，例如枚举 `xaero.hud.minimap.waypoint.WaypointColor` 的合法常量后再选色。
 - **结构 JSON / 群系标签**：用 `[System.IO.Compression.ZipFile]::OpenRead($mcj)` 直接读 jar 内 `data/minecraft/worldgen/structure/*.json` 与 `data/minecraft/tags/worldgen/biome/has_structure/*.json`。嵌套的群系标签由递归 `ResolveBiomeTag` 逐级展开（`#` 前缀递归，深度上限 5）。`StructureGuesser` 里的群系表就是这么抄下来的。
 - **结构模板 `.nbt`**：没有用 NBT 库，而是 gzip 解压后按字节模式匹配——调色板名匹配 `\x08\x00\x04Name(..)`，方块匹配 `\x09\x00\x03pos\x03...\x03\x00\x05state(....)`，并用 `ReadBEInt` 处理大端与补码。这些模板扫描的统计结果（箱子相对锚点的高度区间、特征方块出现率）就是 `StructureGuesser` 注释里那些数字的来源。
 
@@ -169,7 +204,7 @@ C:\Users\<用户>\.gradle\caches\fabric-loom\minecraftMaven\net\minecraft\minecr
 
 长时间全量扫描会留下僵尸 PowerShell 进程，`scratch\kill-strays.ps1` 专门清理。
 
-## 26.2 踩坑记录（都已在代码里注释）
+## MC 26.x 踩坑记录（都已在代码里注释）
 
 - **宝库与不祥宝库是同一个方块** `minecraft:vault`，用 `VaultBlock.OMINOUS` 区分；开启进度看 `VaultBlock.STATE` / `VaultState.{INACTIVE,ACTIVE,UNLOCKING,EJECTING}`。
 - **客户端方块实体 NBT 是空的**，开箱前读不到战利品——所以只能启发式分类。**刷怪笼是例外**：`SpawnerBlockEntity#getSpawner().getOrCreateDisplayEntity(...)` 能拿到真实同步实体，因此能显示「蜘蛛笼 / 烈焰人笼」。
