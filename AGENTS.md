@@ -48,6 +48,7 @@ Gradle 的 `GRADLE_USER_HOME` 默认是 `C:\Users\<用户>\.gradle`（本机约 
 2. `README.md` → 英文段与中文段的 `（0.16.0）` 标题
 3. `scratch\release-notes.md` → 安装步骤里的 jar 文件名（该文件不进版本控制）
 4. git tag `v<version>`
+5. 重新生成发布载荷（`release-body.json` / `modrinth-changelog.md`，见下）
 
 `fabric.mod.json` 的 `version` 由 `processResources` 从 `project.version` 展开，不用手改。
 
