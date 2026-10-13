@@ -52,13 +52,21 @@ Gradle 的 `GRADLE_USER_HOME` 默认是 `C:\Users\<用户>\.gradle`（本机约 
 
 `fabric.mod.json` 的 `version` 由 `processResources` 从 `project.version` 展开，不用手改。
 
-> ⚠️ Modrinth 上传用的 `scratch\release-body.json` 目前是**坏载荷**：把 `Get-Content` 的输出对象直接 `ConvertTo-Json`，
-> 于是 `body` 下面多出 `value` / `PSPath` / `PSParentPath` / `PSChildName` / `PSDrive` / `PSProvider` / `ReadCount`
-> 这些 PowerShell 元数据；而 API 要的是 `{"body": "<markdown 字符串>"}`。正确写法：
+> **发布载荷有两份，字段名不同，别混用：**
+> - `scratch\release-body.json` → **GitHub Release** 用（create-release API 的字段是 `body`）
+> - `scratch\modrinth-changelog.md` → **Modrinth** 用（版本 API 的字段是 `changelog`；网页端直接粘贴该文件）
+>
+> 两份都由 `scratch\release-notes.md` 生成。⚠️ **不要**把 `Get-Content` 的输出对象直接 `ConvertTo-Json` —— 那会带上
+> `value` / `PSPath` / `PSParentPath` / `PSChildName` / `PSDrive` / `PSProvider` / `ReadCount` 等 PowerShell 元数据，
+> 成为坏载荷（历史上 `release-body.json` 就是这么坏的）：
 >
 > ```powershell
-> @{ body = (Get-Content scratch\release-notes.md -Raw) } | ConvertTo-Json | Set-Content scratch\release-body.json -Encoding utf8
+> $b = [System.IO.File]::ReadAllText('scratch\release-notes.md', [System.Text.Encoding]::UTF8)
+> [System.IO.File]::WriteAllText('scratch\release-body.json', (@{ body = $b } | ConvertTo-Json), (New-Object System.Text.UTF8Encoding($false)))
+> [System.IO.File]::WriteAllText('scratch\modrinth-changelog.md', $b, (New-Object System.Text.UTF8Encoding($false)))
 > ```
+>
+> 校验：`body` 必须与 `release-notes.md` 逐字符相等（`-ceq`），顶层只有 `body` 一个键，且不带 BOM。
 
 ### 升级 Minecraft 版本（26.2 → 26.3 的实际流程）
 
