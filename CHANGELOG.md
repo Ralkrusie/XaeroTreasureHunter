@@ -1,3 +1,27 @@
+# 0.17.0-beta.2
+
+## 中文
+
+修复开启免扫描区域轮廓时，Xaero 世界地图明显卡顿的问题。提供 Minecraft **26.2 / 26.3** 两个构建；共同功能一致，废弃营地仍仅限 26.3。
+
+- 将逐像素行的小矩形绘制改为整帧一个 GUI 批次，减少原版相交排序、临时对象与顶点生成开销。4K 单圆探针中的 GUI 元素由 **16,360 降至 1**；十个可见区域也只提交一个批次。
+- 圆弧自适应细分，弦误差控制在四分之一物理像素内；跳过不可见边缘和屏幕完全处于区域内部的情况。独立区域不再查询 Xaero 路径点世界。
+- 保留四层向内渐弱的青色荧光、现有颜色和每层 0.5 GUI 像素宽度；保持平移、缩放、维度及关联区域过滤。
+- 两个版本均通过构建、原有持久化/设置/Restore 回归，以及新增 **571 项**轮廓批次、精度、裁剪和 GUI 缩放检查。CPU 探针不代表实际游戏帧率，仍需游戏内确认。
+
+更新时按游戏版本选择安装包，移除旧 TreasureHunter jar，勿同时安装两份。需要 Java 25、Fabric Loader ≥ 0.19.5 和对应的 Fabric API。配置及持久数据格式与 beta.1 一致。
+
+## English
+
+Fixes severe lag in Xaero's World Map when scan-exempt area outlines are enabled. Includes Minecraft **26.2 / 26.3** builds with matching features; Abandoned Camp support remains exclusive to 26.3.
+
+- Replaced per-pixel scanline rectangles with one GUI batch per frame, reducing intersection sorting, temporary objects and vertex generation. The 4K single-circle probe drops from **16,360 GUI elements to 1**; ten visible areas also share one batch.
+- Adaptively subdivides arcs with a quarter-physical-pixel chord error limit. Skips invisible edges and areas whose interior covers the entire viewport. Standalone areas no longer query Xaero waypoint worlds.
+- Preserves the four inward cyan glow bands, existing colors and 0.5 GUI pixel width per band, alongside pan, zoom, dimension and linked-area filtering.
+- Both builds passed compilation, existing persistence/settings/Restore regressions, and **571 additional outline checks** covering batching, precision, culling and GUI scaling. CPU probes do not measure actual in-game FPS; in-game confirmation is still needed.
+
+Choose the jar matching your Minecraft version and remove the previous TreasureHunter jar; install only one build. Requires Java 25, Fabric Loader ≥ 0.19.5 and matching Fabric API. Configuration and persistent data formats are unchanged from beta.1.
+
 # 0.17.0-beta.1
 
 ## 中文

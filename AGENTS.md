@@ -18,7 +18,7 @@ Xaero 小地图 / 世界地图的**非官方客户端附属 mod**（Fabric · Mi
   除非用户明确要求 —— 何时把 `main` 挪到新版本由用户决定。
   （2026-09 就是擅自把 `main` 快进到 `mc-26.3`，之后不得不强推回滚。）
 - 发布 tag 打在对应的开发线上：`v0.15.0` / `v0.16.0` 都在 `mc-26.3`。
-- 0.17.0-beta.1 使用同一份 GitHub beta 草稿容纳两个 jar，mod_version 分别为 `0.17.0-beta.1+mc26.2` / `0.17.0-beta.1+mc26.3`。`main` 直接回移植共同功能，不合入 26.3 历史；唯一玩法差别为废弃营地。双语改动说明跟踪在 `CHANGELOG.md`，草稿目标为 26.3 提交，正文注明 26.2 提交。
+- 0.17.0-beta.2 使用同一份 GitHub beta 草稿容纳两个 jar，mod_version 分别为 `0.17.0-beta.2+mc26.2` / `0.17.0-beta.2+mc26.3`。`main` 直接回移植共同功能，不合入 26.3 历史；唯一玩法差别为废弃营地。双语改动说明跟踪在 `CHANGELOG.md`，草稿目标为 26.3 提交，正文注明 26.2 提交。
 
 
 ## 构建 / 部署 / 联调
@@ -350,3 +350,10 @@ C:\Users\<用户>\.gradle\caches\fabric-loom\minecraftMaven\net\minecraft\minecr
 - 已去除营地分类、两张表、图标与双语键，以及羊毛楼梯/铜箱标签引用；其余玩法源码与 26.3 相同。
 - clean build、真实 Fabric/Knot 目标变换与 Xaero 26.5.1 / 世界地图 1.46.1 编辑/地图反射面验证通过。310 项行为探针覆盖 56 张原版容器表、持久记忆、完整设置、稳定标记、退出重进、Restore 和 H 清除。
 - 两套发布包集中在原工作区 scratch/beta-release；发布双语说明在 CHANGELOG.md。
+
+## 0.17.0-beta.2 轮廓性能约定
+
+- IgnoreMapOverlay 每帧只提交一个 IgnoreOutlineRenderState，禁止按屏幕像素行调用 fill；原版 GuiRenderState 逐元素做相交排序，旧版 4K 单圆会产生 16360 个元素。
+- IgnoreOutlineRenderState 合并所有可见区域；圆弧从四个单调象限细分到弦误差 ≤0.25 物理像素，并在细分前裁掉屏外弧段。视口完全位于区域内部时不画；四层 alpha 与半 GUI 像素宽度保持。
+- 通过缓存字段反射只读取得 GuiGraphicsExtractor.guiRenderState，使用原版 GUI 管线与全屏裁剪；冻结 pose、区域列表，不能把本帧可变 GUI 状态带入后续渲染。26.3 RenderPipeline 在 renderpearl.api.pipeline，26.2 在 blaze3d.pipeline。
+- 实际 Fabric/Knot 探针新增 571 项，覆盖多区域一个批次、GUI 缩放、弦误差、极大半径裁剪和颜色；性能数字只指 CPU 提交/几何探针，不等同游戏 FPS。
