@@ -3,15 +3,22 @@ package com.treasurehunter;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.treasurehunter.gui.TreasureHunterConfigScreen;
 import com.treasurehunter.scan.MarkerScanner;
+import com.treasurehunter.scan.IgnoreRegionStore;
+import com.treasurehunter.xaero.XaeroWaypointEditor;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.InteractionResult;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -34,6 +41,7 @@ public class TreasureHunterMod implements ClientModInitializer {
 
     private static TreasureHunterConfig config;
     private static MarkerScanner scanner;
+    private static IgnoreRegionStore ignoreRegions;
     private static KeyMapping toggleKey;
     private static KeyMapping clearKey;
     private static KeyMapping settingsKey;
@@ -45,6 +53,8 @@ public class TreasureHunterMod implements ClientModInitializer {
     public static MarkerScanner scanner() {
         return scanner;
     }
+
+    public static IgnoreRegionStore ignoreRegions() { return ignoreRegions; }
 
     /** 从旧模组 ID 的配置（trackit.json）迁移一次，避免改名后丢失设置。 */
     private static void migrateLegacyConfig(Path configPath) {
@@ -64,7 +74,9 @@ public class TreasureHunterMod implements ClientModInitializer {
         Path configPath = FabricLoader.getInstance().getConfigDir().resolve(MOD_ID + ".json");
         migrateLegacyConfig(configPath);
         config = TreasureHunterConfig.load(configPath);
-        scanner = new MarkerScanner(config);
+        ignoreRegions = new IgnoreRegionStore(configPath.resolveSibling("treasurehunter-ignore"), LOGGER);
+        scanner = new MarkerScanner(config, configPath.resolveSibling("treasurehunter-memory"), ignoreRegions);
+        XaeroWaypointEditor.register();
 
         // 26.3 起窗口层由 GLFW 换成 SDL：Type.KEYSYM 改名 KEYBOARD，
         // 键值改用 MC 自己的 InputConstants.KEY_*（不再依赖 LWJGL 的 GLFW 常量）。
@@ -102,7 +114,21 @@ public class TreasureHunterMod implements ClientModInitializer {
 
         ClientChunkEvents.CHUNK_LOAD.register((level, chunk) -> scanner.onChunkLoaded(level, chunk));
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> scanner.reset());
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> scanner.saveMemory());
+        UseBlockCallback.EVENT.register((player, level, hand, hit) -> {
+            if (level instanceof ClientLevel clientLevel) {
+                scanner.onPlacementUsed(clientLevel, hand, hit);
+                scanner.onBlockUsed(clientLevel, hit.getBlockPos(), hand);
+            }
+            return InteractionResult.PASS;
+        });
+        UseEntityCallback.EVENT.register((player, level, hand, entity, hit) -> {
+            if (level instanceof ClientLevel clientLevel) {
+                scanner.onEntityUsed(clientLevel, entity);
+            }
+            return InteractionResult.PASS;
+        });
 
-        LOGGER.info("Xaero TreasureHunter initialized. Enabled targets: {}", config.enabledTargets());
+        LOGGER.info("Xaero TreasureHunter: 初始化完成，已启用目标：{}", config.enabledTargets());
     }
 }

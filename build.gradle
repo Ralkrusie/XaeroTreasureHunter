@@ -10,6 +10,7 @@ base {
 }
 
 repositories {
+	maven { url = "https://maven.terraformersmc.com/releases" }
 	// Xaero's official Maven (used at dev time only; Xaero jars are never bundled).
 	maven {
 		name = "Xaero's Maven"
@@ -23,6 +24,7 @@ dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	compileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
 
 	// Optional dev-time runtime: drop Xaero jars into run/mods manually to test integration.
 }

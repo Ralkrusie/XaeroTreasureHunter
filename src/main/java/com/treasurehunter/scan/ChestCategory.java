@@ -3,11 +3,10 @@ package com.treasurehunter.scan;
 import net.minecraft.network.chat.Component;
 
 /**
- * 箱子（含 26.3 的铜箱子）与运输矿车箱的来源分类：用于路径点标签、颜色、简称与"逐类扫描开关"。
+ * 容器来源分类：箱子/矿车按结构分类，范围外真实表使用单人专用的非原版战利品表容器分类。
  *
  * <p>
- * 木桶不参与结构分类（分类名一律以「箱」结尾，贴到木桶上会误导），
- * 木桶只受 {@code TargetType.BARREL} 这一个目标开关控制。
+ * 原版已知表木桶保留类型名；范围外表木桶也参与 OTHER_LOOT 开关，不贴结构箱名。
  *
  * <p>
  * 显示名走语言文件（zh_cn / en_us 双语），中文命名与 Minecraft Wiki 的结构名对齐
@@ -33,6 +32,7 @@ public enum ChestCategory {
     OCEAN_RUINS("ocean_ruins", "BLUE"),
     RUINED_PORTAL("ruined_portal", "MAGENTA"),
     ABANDONED_CAMP("abandoned_camp", "BLACK"),
+    OTHER_LOOT("other_loot", "MAGENTA"),
     OTHER("other", "GRAY");
 
     private final String id;

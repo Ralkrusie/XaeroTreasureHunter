@@ -3,7 +3,7 @@
     "id": "treasurehunter",
     "version": "${version}",
     "name": "Xaero TreasureHunter",
-    "description": "自动 Pie-Ray 扫描宝箱、刷怪笼与钟，分类标注为 Xaero 小地图 / 世界地图路径点。",
+    "description": "客户端识别战利品容器与兴趣方块，生成 Xaero 临时路径点，支持来源筛选、免扫描区域和 Mod Menu 设置入口。",
     "authors": [
         "Ralkrusie"
     ],
@@ -12,8 +12,12 @@
     "entrypoints": {
         "client": [
             "com.treasurehunter.TreasureHunterMod"
+        ],
+        "modmenu": [
+            "com.treasurehunter.integration.ModMenuIntegration"
         ]
     },
+    "mixins": ["treasurehunter.mixins.json"],
     "depends": {
         "fabricloader": ">=0.19.5",
         "minecraft": "~26.3",
