@@ -72,6 +72,8 @@ public class TargetScanScreen extends Screen {
         config.save();
         if (!enabled && TreasureHunterMod.scanner() != null) {
             TreasureHunterMod.scanner().removeMarkersOfType(type);
+        } else if (enabled && TreasureHunterMod.scanner() != null) {
+            TreasureHunterMod.scanner().requestRescan();
         }
     }
 

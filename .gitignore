@@ -27,6 +27,7 @@ replay_*.log
 
 # run
 run/
+logs/
 
 # scratch (downloaded reference jars etc.)
 scratch/

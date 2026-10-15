@@ -6,27 +6,36 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.HopperBlock;
+import net.minecraft.world.level.block.WallBannerBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.SpawnerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * 结构来源的启发式识别。
  *
  * <p>
  * 客户端的方块实体 NBT 默认是空的（{@code BlockEntity#getUpdateTag} 返回空 tag，
- * 箱子没有覆写），所以箱子的战利品表/内容在开箱前拿不到。这里改用"周边特征方块"
- * 推断容器来源；刷怪笼是例外——它的 NBT 会同步到客户端，可以直接读出生物种类。
+ * 箱子没有覆写），正常同步不会提供箱子的战利品表/内容。单人由
+ * {@link SingleplayerLootReader} 读取真实表并过滤无表容器，本类用于远程服务器的
+ * 来源与仓库特征推断。刷怪笼的 NBT 会同步到客户端，可以直接读出生物种类。
  *
  * <p>
- * 所有推断都是启发式的：玩家自建建筑、混合结构可能误判；埋藏宝藏与刷怪笼生物种类例外，
- * 前者基于原版固定的 (9,9) 生成规律，后者是客户端同步的真实数据。
+ * 所有容器推断都是启发式的：玩家自建建筑、混合结构可能误判，埋藏宝藏的 (9,9)
+ * 规律也只是强证据；刷怪笼生物种类来自客户端同步的真实数据。
  */
 public final class StructureGuesser {
     /** 分类扫描半径（水平）：刷怪房最大 9 格宽、刷怪笼居中、箱子贴墙（离中心 ≤4 格），8 格已很富余。 */
@@ -69,9 +78,57 @@ public final class StructureGuesser {
         return Component.translatable("target.treasurehunter.spawner");
     }
 
-    /** 箱子 / 木桶：按周边特征方块 + 群系 + 高度推断来源分类。 */
+    /**
+     * 箱子（含 26.3 的铜箱子）：按周边特征方块 + 群系 + 高度推断来源分类。
+     *
+     * <p>
+     * 木桶不参与分类——调用方 {@code MarkerScanner} 只对 {@code TargetType.CHEST} 调用本方法，
+     * 因为分类名一律以「箱」结尾，贴到木桶上会误导。
+     */
     public static ChestCategory guessContainerCategory(ClientLevel level, BlockPos pos) {
+        return guessContainerCategory(level, pos, scan(level, pos));
+    }
+
+    /** 同一次取景提供分类与保守过滤结果；木桶的证据分类仅用于过滤，不改成结构箱名。 */
+    public record ContainerAssessment(ChestCategory category, boolean suspectedPlayerContainer,
+            boolean aggressiveHidden) {
+    }
+
+    public static ContainerAssessment assessContainer(ClientLevel level, BlockPos pos, boolean minecart) {
         Flags flags = scan(level, pos);
+        ChestCategory category = guessContainerCategory(level, pos, flags);
+        // javap 复核：矿车生成时放铁轨，走廊有木支撑；地表高处再用蛛网佐证。
+        if (minecart && category == ChestCategory.OTHER && flags.rail && flags.wood
+                && (pos.getY() < SURFACE_MIN_Y || flags.cobweb)) {
+            category = ChestCategory.MINESHAFT;
+        }
+        int stackedPairs = 0;
+        for (BlockPos container : flags.storageContainers) {
+            if (flags.storageContainers.contains(container.above())) {
+                stackedPairs++;
+            }
+        }
+        // 强证据为本次激进过滤的组合条件，不是放置者身份的证明；单一材质不能豁免。
+        boolean strong = switch (category) {
+            case OTHER, OTHER_LOOT -> false;
+            case RUINED_PORTAL -> flags.obsidian && flags.cryingObsidian;
+            case VILLAGE -> flags.path && flags.bed && (flags.bell || flags.hay || flags.composter);
+            case STRONGHOLD -> flags.stoneBricks && flags.bookshelf;
+            case MANSION -> flags.darkOakPlanks && flags.bookshelf && flags.wool;
+            case ANCIENT_CITY -> flags.sculk && flags.deepslateTiles;
+            case OUTPOST -> ServerContainerRules.hasOutpostTowerEvidence(flags.whiteWallBanners,
+                    flags.darkOak, flags.cobble || flags.mossy || flags.cobbleShapes);
+            case SHIPWRECK -> flags.wood && flags.water;
+            case BASTION -> flags.blackstone && isBlackstoneFamily(level.getBlockState(pos.below()));
+            default -> true;
+        };
+        int containers = flags.storageContainers.size();
+        return new ContainerAssessment(category,
+                ServerContainerRules.shouldHide(category, flags.attachedHopper, containers, stackedPairs),
+                ServerContainerRules.shouldHideAggressively(strong, flags.attachedHopper, containers, stackedPairs));
+    }
+
+    private static ChestCategory guessContainerCategory(ClientLevel level, BlockPos pos, Flags flags) {
         int y = pos.getY();
         boolean inNether = level.dimension().equals(Level.NETHER);
         boolean inEnd = level.dimension().equals(Level.END);
@@ -119,6 +176,12 @@ public final class StructureGuesser {
         // （不强制深暗之域群系——部分古城箱子生成在群系边界之外）
         if ((flags.sculk || flags.deepslateTiles) && y < UNDERGROUND_MAX_Y) {
             return ChestCategory.ANCIENT_CITY;
+        }
+        // 26.3 全模板测得两座塔箱周围都有 4 面白旗；26.2 全 1212 模板解压复核，白旗仍仅属前哨站。
+        // 与深色橡木、圆石族共同佐证，允许塔跨群系边界或低地形，不受旧群系/高度兜底限制。
+        if (ServerContainerRules.hasOutpostTowerEvidence(flags.whiteWallBanners, flags.darkOak,
+                flags.cobble || flags.mossy || flags.cobbleShapes)) {
+            return ChestCategory.OUTPOST;
         }
         // 村庄：干草捆 / 堆肥桶 / 钟；床+火把+土径（村庄房屋的生活痕迹组合，沙漠村庄无土径、走下面的火把兜底）；
         // 火把仅在排除矿井特征（铁轨、蛛网、刷怪笼）与深色橡木建筑（前哨站有火把）后作为证据。
@@ -327,6 +390,11 @@ public final class StructureGuesser {
 
     private static Flags scan(ClientLevel level, BlockPos center) {
         Flags flags = new Flags();
+        BlockState centerState = level.getBlockState(center);
+        Set<BlockPos> hopperTargets = Set.of(center);
+        if (centerState.getBlock() instanceof ChestBlock && centerState.getValue(ChestBlock.TYPE) != ChestType.SINGLE) {
+            hopperTargets = Set.of(center, ChestBlock.getConnectedBlockPos(center, centerState));
+        }
         BlockPos min = center.offset(-RADIUS, -Y_RADIUS, -RADIUS);
         BlockPos max = center.offset(RADIUS, Y_RADIUS, RADIUS);
         for (BlockPos cursor : BlockPos.betweenClosed(min, max)) {
@@ -341,6 +409,9 @@ public final class StructureGuesser {
                 flags.mossy = true;
             } else if (block == Blocks.COBBLESTONE) {
                 flags.cobble = true;
+            } else if (block == Blocks.COBBLESTONE_STAIRS || block == Blocks.COBBLESTONE_WALL
+                    || block == Blocks.MOSSY_COBBLESTONE_STAIRS || block == Blocks.MOSSY_COBBLESTONE_WALL) {
+                flags.cobbleShapes = true;
             } else if (isBlackstoneFamily(state)) {
                 flags.blackstone = true;
             } else if (isNetherBrick(state)) {
@@ -352,6 +423,8 @@ public final class StructureGuesser {
                 flags.sculk = true;
             } else if (block == Blocks.DEEPSLATE_TILES) {
                 flags.deepslateTiles = true;
+            } else if (block instanceof WallBannerBlock banner && banner.getColor() == DyeColor.WHITE) {
+                flags.whiteWallBanners++;
             } else if (state.is(BlockTags.BEDS)) {
                 flags.bed = true;
             } else if (block == Blocks.DIRT_PATH) {
@@ -373,6 +446,10 @@ public final class StructureGuesser {
                 flags.tnt = true;
             } else if (block == Blocks.BOOKSHELF || block == Blocks.CHISELED_BOOKSHELF) {
                 flags.bookshelf = true;
+            } else if (block == Blocks.HOPPER) {
+                // 只认实际向容器送入或从其下方抽取的漏斗，旁边无关漏斗不算。
+                flags.attachedHopper |= hopperTargets.contains(cursor.above())
+                        || hopperTargets.contains(cursor.relative(state.getValue(HopperBlock.FACING)));
             } else if (block == Blocks.CHISELED_STONE_BRICKS) {
                 flags.chiseledStoneBricks = true;
                 flags.stoneBricks = true;
@@ -386,8 +463,9 @@ public final class StructureGuesser {
             } else if (block == Blocks.DARK_OAK_LOG) {
                 flags.darkOak = true;
                 flags.wood = true;
-            } else if (block == Blocks.DARK_OAK_FENCE) {
+            } else if (block == Blocks.DARK_OAK_FENCE || block == Blocks.DARK_OAK_STAIRS || block == Blocks.DARK_OAK_SLAB) {
                 flags.darkOakFence = true;
+                flags.darkOak = true;
                 flags.wood = true;
             } else if (state.is(BlockTags.WOOL)) {
                 flags.wool = true;
@@ -426,8 +504,13 @@ public final class StructureGuesser {
                 if (state.is(BlockTags.WOODEN_TRAPDOORS)) {
                     flags.trapdoor = true; // 雪屋暗道/木结构证据
                 }
-            } else if (block == Blocks.CHEST || block == Blocks.TRAPPED_CHEST || block == Blocks.BARREL) {
+            } else if (block instanceof ChestBlock || block == Blocks.BARREL) {
                 flags.containers++;
+                if (Math.abs(cursor.getX() - center.getX()) <= ServerContainerRules.STORAGE_RADIUS
+                        && Math.abs(cursor.getZ() - center.getZ()) <= ServerContainerRules.STORAGE_RADIUS
+                        && Math.abs(cursor.getY() - center.getY()) <= ServerContainerRules.STORAGE_Y_RADIUS) {
+                    flags.storageContainers.add(cursor.immutable());
+                }
                 if (Math.abs(cursor.getX() - center.getX()) <= TREASURE_RANGE
                         && Math.abs(cursor.getZ() - center.getZ()) <= TREASURE_RANGE) {
                     flags.containersNear++;
@@ -442,6 +525,10 @@ public final class StructureGuesser {
         boolean spawner;
         boolean mossy;
         boolean cobble;
+        boolean cobbleShapes;
+        int whiteWallBanners;
+        boolean attachedHopper;
+        final Set<BlockPos> storageContainers = new HashSet<>();
         boolean blackstone;
         boolean netherBricks;
         boolean endCity;

@@ -3,9 +3,14 @@ package com.treasurehunter.gui;
 import com.treasurehunter.TreasureHunterConfig;
 import com.treasurehunter.TreasureHunterMod;
 import com.treasurehunter.scan.ChestCategory;
+import com.treasurehunter.scan.ServerFilterMode;
+import net.minecraft.client.gui.ActiveTextCollector;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.AbstractContainerWidget;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -13,22 +18,11 @@ import net.minecraft.world.item.ItemStack;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 箱子类型过滤：逐类开关"是否扫描"。
- *
- * <p>
- * 关闭某一类后，该类箱子不再登记；已登记的会被移除。重新打开后，下次半径重扫
- * （约 1 秒内）会重新发现当前已加载区域里的该类箱子。关闭"结构智能识别"时
- * 分类不生效、所有箱子都会被扫描。
- */
-public class ChestFilterScreen extends Screen {
+/** 结构筛选：通用结构之后展示单人和服务器专用栏目，滚动区域保留全部选项。 */
+public final class ChestFilterScreen extends Screen {
     private final Screen parent;
     private final TreasureHunterConfig config;
-    private final List<IconRow> iconRows = new ArrayList<>();
-
-    /** 图标行：分类按钮 + 代表物品图标（状态色块在渲染时按实时配置绘制）。 */
-    private record IconRow(AbstractWidget widget, ItemStack icon, ChestCategory category) {
-    }
+    private FilterPanel panel;
 
     public ChestFilterScreen(Screen parent, TreasureHunterConfig config) {
         super(Component.translatable("screen.treasurehunter.filter.title"));
@@ -38,75 +32,183 @@ public class ChestFilterScreen extends Screen {
 
     @Override
     protected void init() {
-        ChestCategory[] categories = ChestCategory.values();
-        int columns = 3;
-        int buttonWidth = 104;
-        int buttonHeight = 20;
-        int spacingX = 6;
-        int spacingY = 4;
-        int rows = (categories.length + columns - 1) / columns;
-        int gridWidth = columns * buttonWidth + (columns - 1) * spacingX;
-        int startX = (this.width - gridWidth) / 2;
-        int startY = 40;
+        double previousScroll = panel == null ? 0 : panel.scrollAmount();
+        int gridWidth = Math.min(420, width - 40);
+        int left = (width - gridWidth) / 2;
+        panel = addRenderableWidget(new FilterPanel(left, 42, gridWidth, Math.max(32, height - 78)));
+        panel.setScrollAmount(previousScroll);
+        int footerWidth = (gridWidth - 12) / 3;
+        addRenderableWidget(Button.builder(Component.translatable("button.treasurehunter.all_on"), button -> setAll(true))
+                .bounds(left, height - 28, footerWidth, 20).build());
+        addRenderableWidget(Button.builder(Component.translatable("button.treasurehunter.all_off"), button -> setAll(false))
+                .bounds(left + footerWidth + 6, height - 28, footerWidth, 20).build());
+        addRenderableWidget(Button.builder(Component.translatable("button.treasurehunter.back"), button -> onClose())
+                .bounds(left + 2 * (footerWidth + 6), height - 28, footerWidth, 20).build());
+    }
 
-        iconRows.clear();
-        for (int i = 0; i < categories.length; i++) {
-            ChestCategory category = categories[i];
-            int x = startX + (i % columns) * (buttonWidth + spacingX);
-            int y = startY + (i / columns) * (buttonHeight + spacingY);
-            AbstractWidget widget = this.addRenderableWidget(Button.builder(categoryLabel(category), button -> {
-                boolean currentlyEnabled = !config.isChestCategoryDisabled(category);
-                config.setChestCategoryEnabled(category, !currentlyEnabled);
-                button.setMessage(categoryLabel(category));
-                if (currentlyEnabled && TreasureHunterMod.scanner() != null) {
-                    TreasureHunterMod.scanner().removeMarkersOfCategory(category);
-                }
-            }).bounds(x, y, buttonWidth, buttonHeight).build());
-            iconRows.add(new IconRow(widget, OptionIcons.categoryIcon(category), category));
+    private void setAll(boolean enabled) {
+        config.setAllChestCategoriesEnabled(enabled);
+        var scanner = TreasureHunterMod.scanner();
+        if (scanner != null) {
+            if (enabled) scanner.requestRescan();
+            else for (ChestCategory category : ChestCategory.values()) scanner.removeMarkersOfCategory(category);
         }
-
-        int footerY = startY + rows * (buttonHeight + spacingY) + 8;
-        int footerWidth = (gridWidth - spacingX * 2) / 3;
-        this.addRenderableWidget(Button.builder(Component.translatable("button.treasurehunter.all_on"), button -> {
-            config.setAllChestCategoriesEnabled(true);
-            this.minecraft.setScreenAndShow(new ChestFilterScreen(this.parent, this.config));
-        }).bounds(startX, footerY, footerWidth, 20).build());
-        this.addRenderableWidget(Button.builder(Component.translatable("button.treasurehunter.all_off"), button -> {
-            config.setAllChestCategoriesEnabled(false);
-            if (TreasureHunterMod.scanner() != null) {
-                for (ChestCategory category : ChestCategory.values()) {
-                    TreasureHunterMod.scanner().removeMarkersOfCategory(category);
-                }
-            }
-            this.minecraft.setScreenAndShow(new ChestFilterScreen(this.parent, this.config));
-        }).bounds(startX + footerWidth + spacingX, footerY, footerWidth, 20).build());
-        this.addRenderableWidget(
-                Button.builder(Component.translatable("button.treasurehunter.back"), button -> this.onClose())
-                        .bounds(startX + 2 * (footerWidth + spacingX), footerY, footerWidth, 20).build());
     }
 
     private Component categoryLabel(ChestCategory category) {
-        boolean enabled = !config.isChestCategoryDisabled(category);
-        return Component.literal(enabled ? "✔ " : "✘ ").append(category.label());
+        return Component.translatable(config.isChestCategoryDisabled(category)
+                ? "screen.treasurehunter.category_off" : "screen.treasurehunter.category_on", category.label());
     }
 
-    @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
-        for (IconRow row : iconRows) {
-            graphics.fakeItem(row.icon(), row.widget().getX() + 2, row.widget().getY() + 2);
-            boolean enabled = !config.isChestCategoryDisabled(row.category());
-            int x = row.widget().getX() + row.widget().getWidth() - 9;
-            int y = row.widget().getY() + 7;
-            graphics.fill(x, y, x + 6, y + 6, enabled ? 0xFF55FF55 : 0xFFFF5555);
+    /** 为左侧图标和右侧状态色块留出文字区，长名称仍使用原版的滚动显示。 */
+    private static final class FilterButton extends Button.Plain {
+        private final boolean icon;
+
+        FilterButton(int x, int y, int width, Component label, OnPress action, boolean icon) {
+            super(x, y, width, 20, label, action, DEFAULT_NARRATION);
+            this.icon = icon;
         }
-        graphics.centeredText(this.font, this.title, this.width / 2, 18, 0xFFFFFFFF);
-        graphics.centeredText(this.font, Component.translatable("screen.treasurehunter.filter.hint"),
-                this.width / 2, 29, 0xFFA0A0A0);
+
+        @Override
+        protected void extractDefaultLabel(ActiveTextCollector collector) {
+            collector.acceptScrollingWithDefaultCenter(getMessage(), getX() + (icon ? 22 : 4),
+                    getRight() - 13, getY(), getBottom());
+        }
+    }
+
+    /** 原版容器控件负责滚动条、鼠标和键盘焦点；子按钮位置随滚动更新。 */
+    private final class FilterPanel extends AbstractContainerWidget {
+        private record Row(Button button, int x, int y, ChestCategory category, ItemStack icon) { }
+        private record Heading(int y, Component label) { }
+        private final List<Row> rows = new ArrayList<>();
+        private final List<Heading> headings = new ArrayList<>();
+        private int totalHeight;
+
+        FilterPanel(int x, int y, int width, int height) {
+            super(x, y, width, height, ChestFilterScreen.this.title);
+            int columns = ChestFilterScreen.this.width >= 360 ? 3 : 2;
+            int cellWidth = (width - (columns - 1) * 6) / columns;
+            int index = 0;
+            for (ChestCategory category : ChestCategory.values()) {
+                if (category == ChestCategory.OTHER_LOOT || category == ChestCategory.OTHER) continue;
+                addCategory(category, (index % columns) * (cellWidth + 6), (index / columns) * 24, cellWidth, null);
+                index++;
+            }
+            int nextY = ((index + columns - 1) / columns) * 24 + 4;
+            headings.add(new Heading(nextY, Component.translatable("screen.treasurehunter.filter.singleplayer")));
+            nextY += 16;
+            addCategory(ChestCategory.OTHER_LOOT, 0, nextY, cellWidth, "screen.treasurehunter.filter.custom_hint");
+            nextY += 32;
+            headings.add(new Heading(nextY, Component.translatable("screen.treasurehunter.filter.server")));
+            nextY += 16;
+            addCategory(ChestCategory.OTHER, 0, nextY, cellWidth, "screen.treasurehunter.filter.other_hint");
+            // 过滤力度的名称较长，占剩余列宽，保留「其他箱」的一列宽度。
+            int modeX = columns == 2 ? 0 : cellWidth + 6;
+            if (columns == 2) nextY += 24;
+            int modeWidth = width - modeX;
+            var mode = new FilterButton(x + modeX, y + nextY, modeWidth, modeLabel(), button -> {
+                config.serverFilterMode = config.serverFilterMode.next();
+                config.save();
+                if (TreasureHunterMod.scanner() != null && minecraft.getSingleplayerServer() == null) {
+                    TreasureHunterMod.scanner().clearMarkers();
+                }
+            }, false);
+            rows.add(new Row(mode, modeX, nextY, null, ItemStack.EMPTY));
+            totalHeight = nextY + 24;
+            positionRows();
+        }
+
+        private Component modeLabel() {
+            return Component.translatable("option.treasurehunter.server_mode", config.serverFilterMode.label());
+        }
+
+        private void addCategory(ChestCategory category, int x, int y, int width, String hintKey) {
+            var button = new FilterButton(getX() + x, getY() + y, width, categoryLabel(category), ignored -> {
+                boolean enabled = config.isChestCategoryDisabled(category);
+                config.setChestCategoryEnabled(category, enabled);
+                var scanner = TreasureHunterMod.scanner();
+                if (scanner != null) {
+                    if (enabled) scanner.requestRescan();
+                    else scanner.removeMarkersOfCategory(category);
+                }
+            }, true);
+            button.setTooltip(Tooltip.create(Component.translatable(hintKey == null ? category.translationKey() : hintKey)));
+            rows.add(new Row(button, x, y, category, OptionIcons.categoryIcon(category)));
+        }
+
+        private void positionRows() {
+            if (rows == null) return;
+            for (var row : rows) row.button().setPosition(getX() + row.x(), getY() + row.y() - (int) scrollAmount());
+        }
+
+        @Override
+        public void setScrollAmount(double amount) {
+            super.setScrollAmount(amount);
+            positionRows();
+        }
+
+        @Override
+        public void setFocused(GuiEventListener child) {
+            super.setFocused(child);
+            if (child instanceof Button button) {
+                if (button.getY() < getY()) setScrollAmount(scrollAmount() + button.getY() - getY());
+                else if (button.getBottom() > getBottom()) setScrollAmount(scrollAmount() + button.getBottom() - getBottom());
+            }
+        }
+
+        @Override
+        public List<? extends GuiEventListener> children() {
+            return rows.stream().map(Row::button).toList();
+        }
+
+        @Override
+        protected int contentHeight() { return totalHeight; }
+
+        @Override
+        protected double scrollRate() { return 24; }
+
+        @Override
+        protected void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float tick) {
+            positionRows();
+            graphics.enableScissor(getX(), getY(), getRight(), getBottom());
+            try {
+                for (var heading : headings) {
+                    int y = getY() + heading.y() - (int) scrollAmount();
+                    graphics.centeredText(font, heading.label(), getX() + getWidth() / 2, y, 0xFFD3DFEC);
+                }
+                for (var row : rows) {
+                    var button = row.button();
+                    if (button.getBottom() <= getY() || button.getY() >= getBottom()) continue;
+                    button.setMessage(row.category() == null ? modeLabel() : categoryLabel(row.category()));
+                    if (row.category() == null) {
+                        button.setTooltip(Tooltip.create(Component.translatable("screen.treasurehunter.server_mode."
+                                + config.serverFilterMode.name().toLowerCase(java.util.Locale.ROOT))));
+                    }
+                    button.extractRenderState(graphics, mouseX, mouseY, tick);
+                    if (!row.icon().isEmpty()) graphics.fakeItem(row.icon(), button.getX() + 2, button.getY() + 2);
+                    boolean enabled = row.category() == null ? config.serverFilterMode != ServerFilterMode.OFF
+                            : !config.isChestCategoryDisabled(row.category());
+                    int indicatorX = button.getRight() - 9;
+                    graphics.fill(indicatorX, button.getY() + 7, indicatorX + 6, button.getY() + 13,
+                            enabled ? 0xFF55FF55 : 0xFFFF5555);
+                }
+            } finally { graphics.disableScissor(); }
+            extractScrollbar(graphics, mouseX, mouseY);
+        }
+
+        @Override
+        protected void updateWidgetNarration(NarrationElementOutput output) {
+            if (getFocused() instanceof Button button) button.updateNarration(output.nest());
+        }
     }
 
     @Override
-    public void onClose() {
-        this.minecraft.setScreenAndShow(parent);
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float tick) {
+        super.extractRenderState(graphics, mouseX, mouseY, tick);
+        graphics.centeredText(font, title, width / 2, 18, 0xFFFFFFFF);
+        graphics.centeredText(font, Component.translatable("screen.treasurehunter.filter.hint"), width / 2, 29, 0xFFA0A0A0);
     }
+
+    @Override
+    public void onClose() { minecraft.setScreenAndShow(parent); }
 }

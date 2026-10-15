@@ -2,8 +2,10 @@ package com.treasurehunter;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 import com.treasurehunter.scan.ChestCategory;
+import com.treasurehunter.scan.ServerFilterMode;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -22,16 +24,20 @@ public final class TreasureHunterConfig {
     public int sweepIntervalTicks = 40;
     /** 最多保留的标记数。 */
     public int maxMarkers = 400;
-    /** 是否只在单人世界工作（多人服务器上这类扫描通常被视为作弊）。 */
-    public boolean singleplayerOnly = true;
+    /** 多人扫描单独控制，旧版仅单人选项迁移为此开关。 */
+    public boolean serverScanEnabled = false;
     /** 发现新标记时是否发送聊天提示。 */
     public boolean notifyOnNew = true;
     /** 是否把标记登记为 Xaero 路径点。 */
     public boolean waypointsEnabled = true;
-    /** 结构智能识别：容器按周边特征标注来源（刷怪房箱/村庄箱…），刷怪笼标注生物种类。 */
+    /** 智能标签：显示容器来源与刷怪笼生物种类；无表过滤和分类筛选独立生效。 */
     public boolean smartLabels = true;
     /** 邻近路径点合并：半径 5 格内已有同类型同分类标记时不再重复标记；关闭则每个匹配都标记。 */
     public boolean mergeNearbyMarkers = true;
+    /** 服务器保守过滤：隐藏缺少强结构证据的漏斗容器和密集堆叠仓库。 */
+    public ServerFilterMode serverFilterMode = ServerFilterMode.CONSERVATIVE;
+    /** 世界地图显示忽略区域轮廓；只影响显示，不影响区域生效。 */
+    public boolean showIgnoreOutlines = true;
     /** 智能识别中被关闭扫描的容器分类（存 ChestCategory 名称）。 */
     public List<String> disabledChestCategories = new ArrayList<>();
 
@@ -73,14 +79,28 @@ public final class TreasureHunterConfig {
         TreasureHunterConfig cfg = null;
         try {
             if (Files.exists(path)) {
-                cfg = GSON.fromJson(Files.readString(path, StandardCharsets.UTF_8), TreasureHunterConfig.class);
+                var json = JsonParser.parseString(Files.readString(path, StandardCharsets.UTF_8)).getAsJsonObject();
+                cfg = GSON.fromJson(json, TreasureHunterConfig.class);
+                if (!json.has("serverScanEnabled") && json.has("singleplayerOnly")) {
+                    cfg.serverScanEnabled = !json.get("singleplayerOnly").getAsBoolean();
+                }
+                if (!json.has("serverFilterMode")) {
+                    boolean conservative = !json.has("filterServerPlayerContainers")
+                            || json.get("filterServerPlayerContainers").getAsBoolean();
+                    boolean strict = json.has("hideUnclassifiedServerContainers")
+                            && json.get("hideUnclassifiedServerContainers").getAsBoolean();
+                    cfg.serverFilterMode = strict ? ServerFilterMode.AGGRESSIVE
+                            : conservative ? ServerFilterMode.CONSERVATIVE : ServerFilterMode.OFF;
+                }
             }
-        } catch (IOException | JsonSyntaxException e) {
+        } catch (IOException | JsonParseException | IllegalArgumentException | IllegalStateException e) {
             TreasureHunterMod.LOGGER.warn("Xaero TreasureHunter: 配置读取失败，使用默认值", e);
         }
         if (cfg == null) {
             cfg = new TreasureHunterConfig();
         }
+        if (cfg.serverFilterMode == null) cfg.serverFilterMode = ServerFilterMode.CONSERVATIVE;
+        if (cfg.disabledChestCategories == null) cfg.disabledChestCategories = new ArrayList<>();
         cfg.path = path;
         cfg.save();
         return cfg;
