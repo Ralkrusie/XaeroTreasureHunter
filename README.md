@@ -2,14 +2,14 @@
 
 ## Beta builds / 测试版
 
-The 0.17.0-beta.1 builds share the same features. Choose the jar for your Minecraft version; only Minecraft 26.3 includes Abandoned Camp support. This branch targets **Minecraft 26.3**. See [bilingual release notes](CHANGELOG.md).
+The 0.17.0-beta.2 builds share the same features. Choose the jar for your Minecraft version; only Minecraft 26.3 includes Abandoned Camp support. This branch targets **Minecraft 26.3**. See [bilingual release notes](CHANGELOG.md).
 
-0.17.0-beta.1 两个构建功能同步，请按 Minecraft 版本选择安装包；仅 26.3 包含废弃营地识别。当前分支面向 **Minecraft 26.3**。详见[双语改动说明](CHANGELOG.md)。
+0.17.0-beta.2 两个构建功能同步，请按 Minecraft 版本选择安装包；仅 26.3 包含废弃营地识别。当前分支面向 **Minecraft 26.3**。详见[双语改动说明](CHANGELOG.md)。
 
 | Minecraft | Branch / 分支 | Installation jar / 安装包 |
 | --- | --- | --- |
-| 26.2 | [`main`](https://github.com/Ralkrusie/XaeroTreasureHunter/tree/main) | `xaero-treasurehunter-0.17.0-beta.1+mc26.2.jar` |
-| 26.3 | [`mc-26.3`](https://github.com/Ralkrusie/XaeroTreasureHunter/tree/mc-26.3) | `xaero-treasurehunter-0.17.0-beta.1+mc26.3.jar` |
+| 26.2 | [`main`](https://github.com/Ralkrusie/XaeroTreasureHunter/tree/main) | `xaero-treasurehunter-0.17.0-beta.2+mc26.2.jar` |
+| 26.3 | [`mc-26.3`](https://github.com/Ralkrusie/XaeroTreasureHunter/tree/mc-26.3) | `xaero-treasurehunter-0.17.0-beta.2+mc26.3.jar` |
 
 Install one matching jar in the client `mods` folder with Fabric API and Java 25; remove the previous TreasureHunter jar first. `-sources.jar` is for developers. Beta builds are for testing.
 
@@ -17,7 +17,7 @@ Install one matching jar in the client `mods` folder with Fabric API and Java 25
 
 An unofficial client-side addon for Xaero's Minimap / World Map that scans target blocks in nearby **loaded chunks** and displays them on the map as **temporary waypoints**.
 
-## Target blocks (0.17.0-beta.1+mc26.3)
+## Target blocks (0.17.0-beta.2+mc26.3)
 
 - Spawners (monster rooms, nether fortresses, strongholds, abandoned mineshafts)
 - Chests / trapped chests / copper chests / barrels / minecarts with chests (monster rooms, villages, buried treasure, abandoned mineshafts, shipwrecks, …)
@@ -78,7 +78,7 @@ An unofficial client-side addon for Xaero's Minimap / World Map that scans targe
 - **Scan-exempt areas**: World settings support independent areas and pagination. The **TreasureHunter: Set as scan-exempt area** button above Confirm/Cancel in Xaero’s new/edit waypoint form opens radius/shape controls. Circle or Square, 0–128 chunks (0 disables; 1 chunk = 16 blocks), centered on the center block and covering every height. Data is isolated by world and dimension. Only final Xaero Confirm saves the draft; Cancel discards it. Enabling a linked area saves temporary/destination points as normal permanent points. Explicit range changes in batch editing apply to all selected points.
 - Linked areas follow confirmed name, position, destination set and dimension changes. Deleted/temporary/missing anchors stop applying at the next refresh (normally within 1 second); sidecar records remain for removal or rebinding. Identical waypoint signatures share one anchor. Whole-set renaming or edits while this mod is absent may require rebinding.
 - Areas use only versioned `config/treasurehunter-ignore/<world hash>.json` with atomic replacement, without extra Xaero fields, name suffixes or custom world data. Removing TreasureHunter leaves standard waypoints and harmless unused JSON. Damaged/future files are preserved, with session-only edits indicated in the UI.
-- World Map draws four inward cyan glow bands with half the initial width and opacity: 0.5 GUI pixels per band, 2 GUI pixels in total; alpha values 111 / 68 / 40 / 20. Outlines follow pan, zoom and dimension; the toggle only affects display. Standalone areas support World Map without Minimap; ambiguous linked worlds are skipped.
+- World Map draws four inward cyan glow bands with half the initial width and opacity: 0.5 GUI pixels per band, 2 GUI pixels in total; alpha values 111 / 68 / 40 / 20. All visible outlines share one GUI batch per frame; arcs use adaptive subdivision and offscreen culling. Outlines follow pan, zoom and dimension; the toggle only affects display. Standalone areas support World Map without Minimap; ambiguous linked worlds are skipped.
 
 ## Warnings
 
@@ -91,7 +91,7 @@ An unofficial client-side addon for Xaero's Minimap / World Map that scans targe
 
 Xaero 小地图 / 世界地图的非官方附属 mod：客户端扫描附近**已加载区块**中的目标方块，并把它们以**临时路径点**的形式显示在地图上。
 
-## 目标方块（0.17.0-beta.1+mc26.3）
+## 目标方块（0.17.0-beta.2+mc26.3）
 
 - 刷怪笼（刷怪房、下界要塞、要塞、废弃矿井）
 - 箱子 / 陷阱箱 / 铜箱子 / 木桶 / 运输矿车箱（刷怪房、村庄、埋藏的宝藏、废弃矿井、沉船……）
@@ -152,7 +152,7 @@ Xaero 小地图 / 世界地图的非官方附属 mod：客户端扫描附近**�
 - 免扫描区域：世界设置支持独立区域增删改和分页；Xaero 新建/编辑路径点表单内、确认/取消上方的「TreasureHunter: 设为免扫描区域」按钮打开半径和形状。圆形/正方形、0–128 区块半径（0 关闭、1 区块 = 16 格），以中心方块中心计算，覆盖全部高度，按世界/维度隔离。草稿在最后确认 Xaero 路径点时保存，取消不落盘；启用范围会将临时/到达后消失的点转为普通永久点。批量编辑的显式范围改动应用于全部选中点。
 - 关联区域随确认后的名称、位置、目标集合和维度迁移。删除、转临时或缺少对应点时，在下次刷新后停用（通常不超过 1 秒），独立记录保留供删除/重绑；完全相同的路径点身份共用锚点。整体重命名集合、卸载本模组期间编辑路径点，可能需重绑。
 - 数据只写版本化的 `config/treasurehunter-ignore/<世界哈希>.json` 并原子替换，不扩展 Xaero 字段、不追加名称后缀、不写自定义世界数据。卸载后，路径点仍为普通 Xaero 点，只留下无害的未使用 JSON。损坏/未来版本文件保留原内容，界面提示修改仅本次有效。
-- 世界地图绘制四层向内渐弱的青色荧光，宽度和不透明度各为初版约一半：每层 0.5 GUI 像素，总宽 2 GUI 像素；alpha 为 111 / 68 / 40 / 20。跟随平移、缩放与维度，开关只影响显示。独立区域支持只安装世界地图；无法唯一对应的关联世界不画错区域。
+- 世界地图绘制四层向内渐弱的青色荧光，宽度和不透明度各为初版约一半：每层 0.5 GUI 像素，总宽 2 GUI 像素；alpha 为 111 / 68 / 40 / 20。整帧可见轮廓合并为一个 GUI 批次，圆弧自适应细分并剔除屏外部分。跟随平移、缩放与维度，开关只影响显示。独立区域支持只安装世界地图；无法唯一对应的关联世界不画错区域。
 
 ## 提醒
 
