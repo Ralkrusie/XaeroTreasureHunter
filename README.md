@@ -1,23 +1,23 @@
 # Xaero TreasureHunter
 
-## Beta builds / 测试版
+## Release / 正式版
 
-The 0.17.0-beta.2 builds share the same features. Choose the jar for your Minecraft version; only Minecraft 26.3 includes Abandoned Camp support. This branch targets **Minecraft 26.3**. See [bilingual release notes](CHANGELOG.md).
+0.17.0 is available for Minecraft 26.2 and 26.3. The structure-filter grid adapts to translated label widths, wraps long labels and hides the scrollbar without disabling wheel or keyboard scrolling. Filter buttons use shorter names in non-Chinese languages; waypoint names remain unchanged. Eleven locales are included: Simplified Chinese, Traditional Chinese (Taiwan/Hong Kong), Literary Chinese, English, Japanese, Korean, German, French, Spanish (Spain) and Portuguese (Brazil). Choose the jar for your Minecraft version; only 26.3 includes Abandoned Camp. See [bilingual release notes](CHANGELOG.md).
 
-0.17.0-beta.2 两个构建功能同步，请按 Minecraft 版本选择安装包；仅 26.3 包含废弃营地识别。当前分支面向 **Minecraft 26.3**。详见[双语改动说明](CHANGELOG.md)。
+0.17.0 正式版提供 Minecraft 26.2 和 26.3 两个构建。结构筛选按译文宽度自适应列数、对长标签换行，隐藏滚动条但仍可用滚轮与键盘滚动；非中文筛选按钮采用短名，路径点名称不变。支持简体中文、繁体中文（台湾/香港）、文言文、英语、日语、韩语、德语、法语、西班牙语（西班牙）和葡萄牙语（巴西）共十一种语言。请按游戏版本选择安装包；仅 26.3 支持废弃营地。详见[双语改动说明](CHANGELOG.md)。
 
 | Minecraft | Branch / 分支 | Installation jar / 安装包 |
 | --- | --- | --- |
-| 26.2 | [`main`](https://github.com/Ralkrusie/XaeroTreasureHunter/tree/main) | `xaero-treasurehunter-0.17.0-beta.2+mc26.2.jar` |
-| 26.3 | [`mc-26.3`](https://github.com/Ralkrusie/XaeroTreasureHunter/tree/mc-26.3) | `xaero-treasurehunter-0.17.0-beta.2+mc26.3.jar` |
+| 26.2 | [`main`](https://github.com/Ralkrusie/XaeroTreasureHunter/tree/main) | `xaero-treasurehunter-0.17.0+mc26.2.jar` |
+| 26.3 | [`mc-26.3`](https://github.com/Ralkrusie/XaeroTreasureHunter/tree/mc-26.3) | `xaero-treasurehunter-0.17.0+mc26.3.jar` |
 
-Install one matching jar in the client `mods` folder with Fabric API and Java 25; remove the previous TreasureHunter jar first. `-sources.jar` is for developers. Beta builds are for testing.
+Install one matching jar in the client `mods` folder with Fabric API and Java 25; remove the previous TreasureHunter jar first. `-sources.jar` is for developers.
 
-将一份对应版本的 jar 放入客户端 `mods`，需 Fabric API 和 Java 25；更新前移除旧 TreasureHunter jar。`-sources.jar` 是开发用源码包。此版本为测试版。
+将一份对应版本的 jar 放入客户端 `mods`，需 Fabric API 和 Java 25；更新前移除旧 TreasureHunter jar。`-sources.jar` 是开发用源码包。
 
 An unofficial client-side addon for Xaero's Minimap / World Map that scans target blocks in nearby **loaded chunks** and displays them on the map as **temporary waypoints**.
 
-## Target blocks (0.17.0-beta.2+mc26.3)
+## Target blocks (0.17.0+mc26.3)
 
 - Spawners (monster rooms, nether fortresses, strongholds, abandoned mineshafts)
 - Chests / trapped chests / copper chests / barrels / minecarts with chests (monster rooms, villages, buried treasure, abandoned mineshafts, shipwrecks, …)
@@ -55,13 +55,13 @@ An unofficial client-side addon for Xaero's Minimap / World Map that scans targe
   - Double chests are registered as a single waypoint.
   - Chest minecarts: singleplayer requires actual loot tables; multiplayer uses surroundings for classification and filtering. Validation near recorded waypoints removes markers whose entities have disappeared.
   - Vaults / ominous vaults: points of interest in trial chambers (a single block in 26.x, distinguished by its ominous state) with independent toggles; once the player opens one with a key (unlocking animation / loot ejection phase), the marker and waypoint are removed automatically and it is not registered again on rescan.
-- **Structure filters**: common structure categories followed by **Singleplayer only** (Non-vanilla Loot Table Container) and **Server clients only** (Other Chest and Possibly player-placed containers). Category buttons use the same cell width as common filters; the longer player-container filter spans the remaining columns (or a full row on narrow screens). Buttons have green/red state indicators; the panel scrolls. Enable all / Disable all affect categories in every section. Disabling removes temporary markers, re-enabling requests a rescan. Name display remains independent.
+- **Structure filters**: common structure categories followed by **Singleplayer only** (Non-vanilla Loot Table Container) and **Server clients only** (Other Chest and Possibly player-placed containers). Filter buttons show structure short names (e.g. “Trial Chambers” rather than “Trial Chambers Chest”); full waypoint names are unchanged. The grid chooses one to three columns from the current font's translated label widths and available space. Long labels wrap without scrolling or reducing the font size; row heights accommodate both on/off states. The non-vanilla loot-table category and player-container filter each get a full row. Buttons retain check/cross marks, green/red state indicators, tooltips and keyboard navigation; the panel remains scrollable with the mouse wheel and keyboard while the scrollbar stays hidden and the footer stays fixed. Enable all / Disable all affect categories in every section. Disabling removes temporary markers, re-enabling requests a rescan. Name display remains independent.
 - **Possibly player-placed containers** (Structure filters → Server clients only): **Off / Conservative / Aggressive**, default Conservative. Off only disables player-container filtering. Conservative hides confirmed self-placed containers and obvious hopper/storage setups while preserving structure exemptions (except Village/Stronghold). Aggressive additionally hides unknown/weak sources and removes hopper/storage exemptions; copper chest material alone is insufficient. It can miss natural/modded loot. Storage counts individual container blocks, including both double-chest halves: at least 8 containers and 4 vertical pairs in horizontal ±4 / vertical ±3.
 - Filtering runs at discovery and relevant hopper/container updates, coalesced over 6 ticks for previously hidden or undiscovered targets. Confirmed markers keep the same category and waypoint object; ordinary block changes and chunk resends do not delete/recreate them. Confirmed self-placement records persist in `config/treasurehunter-placed/` and can be reset in World settings.
 - **Opened-container memory**: the player's clicked chest/barrel/minecart is recorded when its actual container menu opens, and its waypoint is removed when that menu closes. Merely clicking a blocked container does not record it. Both halves of a double chest are remembered; minecarts use stable UUIDs. Vaults are remembered after a key interaction is confirmed by their unlocking/ejection state. Opening is remembered even if no items are taken, and memory tracking continues while scanning is off or restricted to singleplayer.
 - **Persistent memory**: records are saved immediately under `config/treasurehunter-memory/`, separately for each local save directory or server address + player UUID, and for each dimension. They survive disconnects and game restarts. World settings → "Reset opened chest/vault records in this world" clears all dimensions of the current world and allows eligible targets to be rediscovered; other worlds are unaffected. A server reset at the same address, or replacing/refilling a container at the same coordinates, requires resetting these records when you want to scan it again. Visits made before this feature existed cannot be reconstructed.
 - **Map reloads / round-based worlds**: ClientLevel changes only switch scan/loot caches and clear pending interactions. Confirmed markers survive chunk reloads, dimension changes and reconnects. Persistence uses save path or server address + player UUID, plus dimension—not a round ID or seed. Rebuilding at the same identity (including Bingo) reuses scan/opened/placed records and independent scan-exempt areas. Use H for a fresh scan, reset opened/placed records in World settings and review scan-exempt areas when needed.
-- **Localization**: UI text, category names, waypoint initials, the key category and notification messages are bilingual (Chinese/English, switching automatically with the game language); notifications show the actual bound keys.
+- **Localization**: UI text, category names, the key category and notifications support Simplified Chinese, Traditional Chinese (Taiwan/Hong Kong), Literary Chinese, English, Japanese, Korean, German, French, Spanish (Spain) and Portuguese (Brazil), following the game language. All eleven locales cover the same 156 keys; other languages fall back to English through Minecraft. New locales keep the short English waypoint abbreviations. Notifications show the actual bound keys. Switching language does not rename existing saved waypoints; newly registered markers use the selected language. New translations have not yet had comprehensive native-speaker review.
 - **Merge nearby waypoints** (can be disabled in settings): no new marker when an identical marker (same type + same category) already exists within 5 blocks; when disabled, every match is marked.
 - **Waypoint lifecycle**: self-created waypoints record their original waypoint set. Cleanup only deletes points that are still temporary. Using Xaero's **Restore** (or changing a point to permanent) transfers it to player management: clearing (`H`), opening containers, changing filters, and dimension changes all preserve it. Delete saved points through Xaero when desired.
 - **Temporary marker persistence**: `config/treasurehunter-markers/<world hash>.json` stores confirmed positions, labels, categories, minecart UUIDs and original Xaero world/set paths. Xaero itself skips temporary points when saving. Disconnects save this sidecar and release references without deleting points; reconnects restore temporary points without rescanning or duplicate discovery messages. H clears both managed temporary points and their cached records. Restore hands a point to Xaero’s permanent storage; later cleanup never takes it back. Corrupt/future files are preserved. Temporary points already lost before this feature require one rescan.
@@ -91,7 +91,7 @@ An unofficial client-side addon for Xaero's Minimap / World Map that scans targe
 
 Xaero 小地图 / 世界地图的非官方附属 mod：客户端扫描附近**已加载区块**中的目标方块，并把它们以**临时路径点**的形式显示在地图上。
 
-## 目标方块（0.17.0-beta.2+mc26.3）
+## 目标方块（0.17.0+mc26.3）
 
 - 刷怪笼（刷怪房、下界要塞、要塞、废弃矿井）
 - 箱子 / 陷阱箱 / 铜箱子 / 木桶 / 运输矿车箱（刷怪房、村庄、埋藏的宝藏、废弃矿井、沉船……）
@@ -129,13 +129,13 @@ Xaero 小地图 / 世界地图的非官方附属 mod：客户端扫描附近**�
   - 双联箱只登记一个路径点
   - 运输矿车箱：单人要求真实战利品表；服务器按周边特征分类与过滤。在已记录路径点附近复核时，会移除对应实体已消失的标记。
   - 宝库 / 不祥宝库：试炼密室的兴趣方块（26.x 为同一方块、由不祥属性区分），独立开关；玩家用钥匙开启后（开启动画 / 弹出战利品阶段）自动移除标记与路径点，重扫不再登记
-- 结构筛选：通用结构分类下方依次为「仅单人生效」（非原版战利品表容器）与「仅服务器客户端生效」（其他箱、可能由人为放置的容器）。专用分类按钮与通用网格同宽；较长的玩家容器过滤选项占剩余列，窄屏另起整行。按钮显示红绿状态块。面板支持滚动，全开/全关作用于所有栏目的分类；关闭移除临时点，重开请求重扫，与名称显示开关独立。
+- 结构筛选：通用结构分类下方依次为「仅单人生效」（非原版战利品表容器）与「仅服务器客户端生效」（其他箱、可能由人为放置的容器）。非中文筛选按钮仅显示结构短名（如 Trial Chambers，而非 Trial Chambers Chest），路径点名称保持完整；中文保留「箱」。网格根据当前字体实测的翻译宽度与可用空间选择一至三列，长名称静态换行，不缩小字号、不再来回滚动；行高同时容纳开关两种状态。「非原版战利品表容器」和玩家容器过滤各占整行。保留勾叉、红绿状态块、悬停说明和键盘导航。面板保留鼠标滚轮与键盘滚动，但不显示遮挡右侧按钮的滚动条，页脚固定，全开/全关作用于所有栏目的分类；关闭移除临时点，重开请求重扫，与名称显示开关独立。
 - 可能由人为放置的容器（结构筛选 → 仅服务器客户端生效）：**不过滤 / 保守 / 激进**，默认保守。不过滤只关闭该过滤，结构筛选和免扫描区域仍生效。保守过滤服务端确认的自己放置容器和明显漏斗/仓库，保留原结构豁免（村庄、要塞除外）。激进进一步隐藏未知及弱证据容器，漏斗/仓库不再获豁免；铜箱材质不能单独豁免，可能漏掉自然或模组战利品。仓库门限为水平 ±4 / 垂直 ±3 内至少 8 容器方块、4 对上下堆叠；双联箱两半各算一个。
 - 过滤在首次发现和漏斗/容器相关变化后判断，合并 6 tick 后发现未登记或曾过滤的目标。已确认标记保持分类与路径点对象，不因普通方块变化或区块重发删除重建。自己放置记录独立存 `config/treasurehunter-placed/`，跨重启保留，世界设置可重置。
 - 已打开容器记忆：玩家点击的箱子/木桶/矿车在实际容器界面打开后立即记录，关闭该界面后移除对应路径点；只点击打不开的容器不会记录。双联箱记录两半，矿车使用稳定 UUID；宝库在持钥匙交互并确认解锁/弹出战利品后记录。没拿物品也算打开过；暂停扫描或关闭服务器扫描许可时，记忆追踪仍然工作。
 - 持久记忆：记录立即保存到 `config/treasurehunter-memory/`，按本地存档目录或服务器地址 + 玩家 UUID 隔离，并分别保存各维度；断开连接、重启游戏后仍保留。设置里的「重置当前世界已开启宝箱/宝库记录」会清除当前世界全部维度的记忆并允许重新发现符合筛选条件的目标，不影响其他世界。服务器在同地址换档，或在原坐标替换/补充容器后，想重新扫描时需重置记录；旧版本未保存的历史访问无法补回。
 - 地图重载/回合制地图：ClientLevel 更换只切换扫描/战利品缓存并丢弃交互候选，已确认标记跨区块重载、切维度和重连保留。持久身份仍为存档目录或服务器地址 + 玩家 UUID，再按维度分桶，不包含回合或种子。同身份重建地图（如 Bingo）需按 H 重新扫描，并按需在世界设置重置已开启/放置记录、检查免扫描区域。
-- 语言支持：界面文字、分类名、路径点简称、键位分类名与提示消息均为中英双语（随游戏语言自动切换）；提示中的按键名显示实际键位
+- 语言支持：界面文字、分类名、键位分类名与提示消息支持简体中文、繁体中文（台湾/香港）、文言文、英语、日语、韩语、德语、法语、西班牙语（西班牙）与葡萄牙语（巴西），随游戏语言切换。十一种语言均覆盖相同的 156 个键，其他语言使用 Minecraft 原生的英语回退；新增语言沿用简短的英文路径点缩写。提示显示实际键位。切换语言不会重命名已有的已保存路径点，新登记的标记使用新语言。新增翻译尚未经过完整的母语使用者校对。
 - 邻近路径点合并（可在设置里关）：半径 5 格内已有相同标记（同类型 + 同分类）时不再重复标记；关闭后每个匹配都会标记
 - 路径点生命周期：自建路径点记录创建时的路径点集，清理只删除仍为临时状态的点。在 Xaero 中 **Restore（恢复）** 或改为永久的点交由玩家管理，清空（H）、开箱、修改过滤设置、切换维度均会保留；需要删除时请在 Xaero 中操作
 - 临时标记持久化：`config/treasurehunter-markers/<世界哈希>.json` 记录已确认的位置、名称、分类、矿车 UUID 及原 Xaero 世界/集合。Xaero 原生保存器会跳过临时点，所以由本模组单独保存；断线只保存并释放引用，重进自动恢复临时点，不重新分类或重复提示。H 同时清除管理中的临时点和其缓存记录。Restore 后永久点由 Xaero 保存并交还玩家管理。未知/损坏文件保留；旧版本已丢失且未保存的临时点需重扫一次。
