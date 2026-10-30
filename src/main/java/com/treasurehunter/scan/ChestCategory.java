@@ -9,7 +9,7 @@ import net.minecraft.network.chat.Component;
  * 原版已知表木桶保留类型名；范围外表木桶也参与 OTHER_LOOT 开关，不贴结构箱名。
  *
  * <p>
- * 显示名走语言文件（zh_cn / en_us 双语），中文命名与 Minecraft Wiki 的结构名对齐
+ * 显示名走语言文件（完整名用于路径点，筛选短名仅用于设置），中文命名与 Minecraft Wiki 的结构名对齐
  * （如 埋藏的宝藏 / 刷怪房 / 废弃矿井 / 堡垒遗迹 / 下界要塞 / 废弃传送门）。
  */
 public enum ChestCategory {
@@ -42,14 +42,19 @@ public enum ChestCategory {
         this.colorEnumName = colorEnumName;
     }
 
-    /** 语言键（zh_cn / en_us 两套翻译）。 */
+    /** 路径点完整名称的语言键。 */
     public String translationKey() {
         return "category.treasurehunter." + id;
     }
 
-    /** 本地化的分类名（如「废弃矿井箱」/"Mineshaft Chest"）。 */
+    /** 本地化的完整分类名（路径点与提示使用）。 */
     public Component label() {
         return Component.translatable(translationKey());
+    }
+
+    /** 筛选按钮专用短名，不改变路径点和提示的完整分类名。 */
+    public Component filterLabel() {
+        return Component.translatable("filter.treasurehunter." + id);
     }
 
     /** 地图上显示的简称（随语言本地化：中文单字 / 英文双字母缩写）。 */

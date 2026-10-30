@@ -1,3 +1,21 @@
+# 0.17.0 — Minecraft 26.2 / 26.3
+
+## 中文
+
+- 结构筛选按当前字体和翻译后的实际宽度选择一至三列，宽屏适当加宽面板；长标签静态换行，不再来回滚动或缩小字号。隐藏遮住右侧按钮的滚动条及其不可见拖拽热区，保留鼠标滚轮和键盘焦点滚动。
+- 非中文筛选按钮改用不带通用「Chest/箱」后缀的结构短名；中文仍可保留「箱」。路径点、聊天提示沿用完整名称，不影响已有标记。单人未映射战利品表与服务器「其他」各自保留明确含义。
+- 「非原版战利品表容器」与服务器玩家容器过滤独占整行；按钮行高兼容所有状态，保留图标、勾叉、红绿状态块、悬停说明、键盘导航与固定页脚。
+- 新增日语、韩语、德语、法语、西班牙语（西班牙）、葡萄牙语（巴西）、繁体中文（台湾/香港）及文言文，十一种语言均覆盖 153 个键。新欧亚语言沿用英文路径点缩写；术语和译文尚待母语校对。
+- Minecraft 26.2 与 26.3 的共同功能同步；废弃营地仅限 26.3。不改变扫描逻辑、配置或持久数据格式。
+
+## English
+
+- Structure filters choose one to three columns using the current font and translated label widths, with a wider panel when space allows. Long labels wrap statically instead of scrolling or shrinking the font. The scrollbar and its invisible drag hit area no longer cover the rightmost buttons; mouse-wheel and keyboard-focus scrolling remain available.
+- Non-Chinese filter buttons use structure short names without generic “Chest” suffixes; Chinese may retain 箱. Waypoint and discovery names remain full, including existing markers. The singleplayer unmapped-loot category and server “Other” stay distinct.
+- The non-vanilla loot-table category and server player-container filter each use a full row. Row heights accommodate every state while retaining icons, check/cross marks, state colors, tooltips, keyboard navigation and the fixed footer.
+- Added Japanese, Korean, German, French, Spanish (Spain), Portuguese (Brazil), Traditional Chinese (Taiwan/Hong Kong) and Literary Chinese; all eleven locales cover the same 153 keys. New European and Asian locales retain English waypoint abbreviations; translations and terminology await native-speaker review.
+- Shared features are available on both Minecraft 26.2 and 26.3; Abandoned Camp remains exclusive to 26.3. Scanning logic, configuration and persistent data formats are unchanged.
+
 # 0.17.0-beta.2
 
 ## 中文

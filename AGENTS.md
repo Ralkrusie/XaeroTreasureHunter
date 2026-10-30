@@ -12,13 +12,13 @@ Xaero 小地图 / 世界地图的**非官方客户端附属 mod**（Fabric · Mi
 
 ## 分支约定（别再搞错）
 
-- `main` —— **稳定发布线**。维持 Minecraft 26.2；0.17.0-beta.1 与 26.3 同步功能，稳定发布 tag 仍为 v0.14.2。给旧版本发 hotfix 走这里。
+- `main` —— **稳定发布线**。维持 Minecraft 26.2；与 26.3 同步共同功能，唯独废弃营地仅限 26.3。给旧版本发 hotfix 走这里。
 - `mc-26.3` —— **当前开发线**（26.3 移植 + 废弃营地）。日常开发在这里。
 - 升级 MC 版本时新建 `mc-XX` 分支；**不要把新版本快进或合并进 `main`**，
   除非用户明确要求 —— 何时把 `main` 挪到新版本由用户决定。
   （2026-09 就是擅自把 `main` 快进到 `mc-26.3`，之后不得不强推回滚。）
 - 发布 tag 打在对应的开发线上：`v0.15.0` / `v0.16.0` 都在 `mc-26.3`。
-- 0.17.0-beta.2 使用同一份 GitHub beta 草稿容纳两个 jar，mod_version 分别为 `0.17.0-beta.2+mc26.2` / `0.17.0-beta.2+mc26.3`。`main` 直接回移植共同功能，不合入 26.3 历史；唯一玩法差别为废弃营地。双语改动说明跟踪在 `CHANGELOG.md`，草稿目标为 26.3 提交，正文注明 26.2 提交。
+- 0.17.0 正式版使用同一份 GitHub Release 容纳两个 jar，mod_version 分别为 `0.17.0+mc26.2` / `0.17.0+mc26.3`。`main` 直接回移植共同功能，不合入 26.3 历史；唯一玩法差别为废弃营地。双语改动说明跟踪在 `CHANGELOG.md`，`v0.17.0` tag 指向 26.3 提交，正文注明 26.2 提交。
 
 
 ## 构建 / 部署 / 联调
@@ -264,8 +264,8 @@ mixin/                                       → 原版按钮确认、增量包�
   public String initials() { return Component.translatable("initial.treasurehunter." + id).getString(); }
   ```
   中文给单字（宝/试/矿/怪/堡/要/末/古/村/沙/林/哨/邸/船/雪/海/门/库），英文给双字母（BT/TC/MS/MR/BA/NF/EC/AC/VL/DP/JT/SH/PO/WM/SW/IG/OR/RP/OT）。中文有意重复：要塞与下界要塞同为「要」，宝库与不祥宝库同为「库」（英文不重复）。
-- key 命名空间：`target.` / `category.` / `initial.` / `key.` / `key.category.` / `message.` / `option.` / `button.` / `screen.`，统一 `treasurehunter` 命名空间。
-- **`en_us.json` 与 `zh_cn.json` 必须逐 key 对应**（当前各 133 个 key），没有回退文件。新增东西同时改两个文件。
+- key 命名空间：`target.` / `category.` / `filter.` / `initial.` / `key.` / `key.category.` / `message.` / `option.` / `button.` / `screen.`，统一 `treasurehunter` 命名空间。`category.*` 是路径点/消息完整名称；`filter.*` 仅在结构筛选页显示。非中文 `filter.*` 去掉通用 Chest/箱/容器后缀，中文可保留「箱」，但不要修改 `category.*` 以免影响新登记路径点和提示。
+- **所有语言文件必须逐 key 对应**（26.2 为 133 个通用键 + 20 个筛选短名，共 153 个）：`en_us`、`zh_cn`、`zh_tw`、`zh_hk`、`lzh`（Minecraft 的文言文代码）、`ja_jp`、`ko_kr`、`de_de`、`fr_fr`、`es_es`、`pt_br`。新增 key 同时补全十一种语言，并校验 `%s` 等占位符数量与顺序；没有自定义回退文件，未提供的语言由 Minecraft 原生回退到英语。新扩充的欧亚语言保留英文路径点缩写；术语和译文待母语校对。
 - 路径点名字在登记时就 `label.getString()` 拍平成 `String`，**切换语言不会立刻改写已有路径点**，要等重扫重新登记。
 - `README.md` 的分类简称列表是语言文件数据的副本，**加分类时要一起改**（0.14.1 的提交就是 README + 两个语言文件同时动）。
 
@@ -277,7 +277,7 @@ mixin/                                       → 原版按钮确认、增量包�
 2. `TreasureHunterConfig` 加布尔字段 **并**补 `isEnabled(TargetType)` 的穷尽 switch。
 3. `gui/TargetScanScreen.setTarget` 的 switch（关闭时调用 `removeMarkersOfType`）。
 4. `gui/OptionIcons.targetIcon` 的 switch + 新增 `TARGET_*` 图标常量。
-5. 两个语言文件各加 `target.treasurehunter.<id>` 与 `initial.treasurehunter.<id>`。
+5. 所有语言文件各加 `target.treasurehunter.<id>` 与 `initial.treasurehunter.<id>`。
 6. 颜色必须是 Xaero `WaypointColor` 里**已存在**的常量名（靠 `getField(name)` 解析）。Xaero 没有 `ORANGE`，宝库因此用 `GOLD`。
 
 设置界面按 `TargetType.values()` 迭代，会自动出现新条目。
@@ -287,7 +287,7 @@ mixin/                                       → 原版按钮确认、增量包�
 1. `ChestCategory` 枚举构造 `(id, colorEnumName)`。
 2. `StructureGuesser.guessContainerCategory` 的判定链（**顺序敏感，先匹配先赢**）+ 私有 `Flags` 加字段 + `scan(...)` 里加检测分支。
 3. `gui/OptionIcons.categoryIcon` 的 switch + `CAT_*` 常量。
-4. 两个语言文件各加 `category.treasurehunter.<id>` 与 `initial.treasurehunter.<id>`。
+4. 所有语言文件各加 `category.treasurehunter.<id>`（路径点完整名）、`filter.treasurehunter.<id>`（筛选短名）与 `initial.treasurehunter.<id>`。
 5. `LootTableCategories.classify` 补真实战利品表映射，表名从当前 MC jar 核对。
 
 筛选开关是**按枚举名自动**生效的（`disabledChestCategories`），不用加配置字段。若新分类来自实体或方块实体，还要相应扩展 `scanMinecarts` / `registerMinecart` / `scanChunk` / `register` 与 `validateNearby` 的存在性检查。

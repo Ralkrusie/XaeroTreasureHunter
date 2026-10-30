@@ -1,23 +1,23 @@
 # Xaero TreasureHunter
 
-## Beta builds / 测试版
+## Release / 正式版
 
-The 0.17.0-beta.2 builds share the same features. Choose the jar for your Minecraft version; only Minecraft 26.3 includes Abandoned Camp support. This branch targets **Minecraft 26.2**. See [bilingual release notes](CHANGELOG.md).
+0.17.0 is available for Minecraft 26.2 and 26.3. The structure-filter grid adapts to translated label widths, wraps long labels and hides the scrollbar without disabling wheel or keyboard scrolling. Filter buttons use shorter names in non-Chinese languages; waypoint names remain unchanged. Eleven locales are included: Simplified Chinese, Traditional Chinese (Taiwan/Hong Kong), Literary Chinese, English, Japanese, Korean, German, French, Spanish (Spain) and Portuguese (Brazil). Choose the jar for your Minecraft version; only 26.3 includes Abandoned Camp. See [bilingual release notes](CHANGELOG.md).
 
-0.17.0-beta.2 两个构建功能同步，请按 Minecraft 版本选择安装包；仅 26.3 包含废弃营地识别。当前分支面向 **Minecraft 26.2**。详见[双语改动说明](CHANGELOG.md)。
+0.17.0 正式版提供 Minecraft 26.2 和 26.3 两个构建。结构筛选按译文宽度自适应列数、对长标签换行，隐藏滚动条但仍可用滚轮与键盘滚动；非中文筛选按钮采用短名，路径点名称不变。支持简体中文、繁体中文（台湾/香港）、文言文、英语、日语、韩语、德语、法语、西班牙语（西班牙）和葡萄牙语（巴西）共十一种语言。请按游戏版本选择安装包；仅 26.3 支持废弃营地。详见[双语改动说明](CHANGELOG.md)。
 
 | Minecraft | Branch / 分支 | Installation jar / 安装包 |
 | --- | --- | --- |
-| 26.2 | [`main`](https://github.com/Ralkrusie/XaeroTreasureHunter/tree/main) | `xaero-treasurehunter-0.17.0-beta.2+mc26.2.jar` |
-| 26.3 | [`mc-26.3`](https://github.com/Ralkrusie/XaeroTreasureHunter/tree/mc-26.3) | `xaero-treasurehunter-0.17.0-beta.2+mc26.3.jar` |
+| 26.2 | [`main`](https://github.com/Ralkrusie/XaeroTreasureHunter/tree/main) | `xaero-treasurehunter-0.17.0+mc26.2.jar` |
+| 26.3 | [`mc-26.3`](https://github.com/Ralkrusie/XaeroTreasureHunter/tree/mc-26.3) | `xaero-treasurehunter-0.17.0+mc26.3.jar` |
 
-Install one matching jar in the client `mods` folder with Fabric API and Java 25; remove the previous TreasureHunter jar first. `-sources.jar` is for developers. Beta builds are for testing.
+Install one matching jar in the client `mods` folder with Fabric API and Java 25; remove the previous TreasureHunter jar first. `-sources.jar` is for developers.
 
-将一份对应版本的 jar 放入客户端 `mods`，需 Fabric API 和 Java 25；更新前移除旧 TreasureHunter jar。`-sources.jar` 是开发用源码包。此版本为测试版。
+将一份对应版本的 jar 放入客户端 `mods`，需 Fabric API 和 Java 25；更新前移除旧 TreasureHunter jar。`-sources.jar` 是开发用源码包。
 
 An unofficial client-side addon for Xaero's Minimap / World Map that scans target blocks in nearby **loaded chunks** and displays them on the map as **temporary waypoints**.
 
-## Target blocks (0.17.0-beta.2+mc26.2)
+## Target blocks (0.17.0+mc26.2)
 
 - Spawners (monster rooms, nether fortresses, strongholds, abandoned mineshafts)
 - Chests / trapped chests / barrels / minecarts with chests (monster rooms, villages, buried treasure, abandoned mineshafts, shipwrecks, …)
@@ -90,7 +90,7 @@ An unofficial client-side addon for Xaero's Minimap / World Map that scans targe
 
 Xaero 小地图 / 世界地图的非官方附属 mod：客户端扫描附近**已加载区块**中的目标方块，并把它们以**临时路径点**的形式显示在地图上。
 
-## 目标方块（0.17.0-beta.2+mc26.2）
+## 目标方块（0.17.0+mc26.2）
 
 - 刷怪笼（刷怪房、下界要塞、要塞、废弃矿井）
 - 箱子 / 陷阱箱 / 木桶 / 运输矿车箱（刷怪房、村庄、埋藏的宝藏、废弃矿井、沉船……）
